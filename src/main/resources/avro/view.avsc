@@ -1,0 +1,67 @@
+[
+    {
+        "namespace": "com.frank.eventsourced.model.app",
+        "type": "record",
+        "name": "Widget",
+        "fields": [
+            {
+                "name": "widgetId",
+                "type": "string",
+                "doc": "The App widget unique identifier"
+            },
+            {
+                "name": "meta",
+                "type": {
+                    "type": "map",
+                    "values": "string"
+                },
+                "default": {},
+                "doc": "Meta-information of this widget"
+            },
+            {
+                "name": "data",
+                "type": {
+                    "type": "map",
+                    "values": "string"
+                },
+                "default": {},
+                "doc": "Data of this widget"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.model.app",
+        "type": "record",
+        "name": "App",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The TenantId"
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name" : "version",
+                "type" : "int",
+                "doc" : "The version"
+            },
+            {
+                "name": "widgets",
+                "type": {
+                    "type": "array",
+                    "items": "com.frank.eventsourced.model.app.Widget"
+                },
+                "doc": "The widgets"
+            }
+        ]
+    }
+]

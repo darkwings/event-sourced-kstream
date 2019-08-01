@@ -1,0 +1,359 @@
+[
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "Widget",
+        "fields": [
+            {
+                "name": "widgetId",
+                "type": "string",
+                "doc": "The App widget unique identifier"
+            },
+            {
+                "name": "meta",
+                "type": {
+                    "type": "map",
+                    "values": "string"
+                },
+                "default": {},
+                "doc": "Meta-information of App widget"
+            },
+            {
+                "name": "data",
+                "type": {
+                    "type": "map",
+                    "values": "string"
+                },
+                "default": {},
+                "doc": "Data of App widget"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "AppCreated",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The evend ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "AppReplaced",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The evend ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "widgets",
+                "type": {
+                    "type": "array",
+                    "items": "com.frank.eventsourced.events.platform.app.Widget"
+                },
+                "doc": "The replaced widgets"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "AppDropareaCleared",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The event ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "dropareaId",
+                "type": "string",
+                "doc": "The droparea ID"
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "items",
+                "type": [
+                    "null",
+                    {
+                        "type": "array",
+                        "items": "com.frank.eventsourced.events.platform.app.Widget"
+                    }
+                ],
+                "doc": "The removed widgets",
+                "default": null
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "WidgetAdded",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The event ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "widget",
+                "type": "com.frank.eventsourced.events.platform.app.Widget",
+                "doc": "The added widget"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "WidgetDeleted",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The event ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "itemId",
+                "type": "string",
+                "doc": "The Item ID"
+            },
+            {
+                "name": "flUniqueId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The FL Unique ID: deprecated. V2 use appItem",
+                "default": null
+            },
+            {
+                "name": "indexName",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The Index Name: deprecated. V2 use appItem",
+                "default": null
+            },
+            {
+                "name": "widget",
+                "type": [
+                    "null",
+                    "com.frank.eventsourced.events.platform.app.Widget"
+                ],
+                "doc": "The deleted widget",
+                "default": null
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "WidgetUpdated",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The event ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "widget",
+                "type": "com.frank.eventsourced.events.platform.app.Widget",
+                "doc": "The updated widget"
+            }
+        ]
+    },
+    {
+        "namespace": "com.frank.eventsourced.events.platform.app",
+        "type": "record",
+        "name": "AppMerged",
+        "fields": [
+            {
+                "name": "key",
+                "type": "string",
+                "doc": "The partition key"
+            },
+            {
+                "name": "eventId",
+                "type": "string",
+                "doc": "The event ID"
+            },
+            {
+                "name": "operationId",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "The operation ID, useful to correlate events",
+                "default": null
+            },
+            {
+                "name": "userId",
+                "type": "string",
+                "doc": "The User ID"
+            },
+            {
+                "name": "tenantId",
+                "type": "string",
+                "doc": "The tenant ID"
+            },
+            {
+                "name": "widgets",
+                "type": {
+                    "type": "array",
+                    "items": "com.frank.eventsourced.events.platform.app.Widget"
+                },
+                "doc": "The merged widgets"
+            }
+        ]
+    }
+]
