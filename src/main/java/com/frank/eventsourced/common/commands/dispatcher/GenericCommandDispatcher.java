@@ -8,6 +8,7 @@ import com.frank.eventsourced.common.interactivequeries.HostStoreInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -57,12 +58,14 @@ public abstract class GenericCommandDispatcher<S extends SpecificRecord> impleme
                 try {
                     CommandWrapper wrapper = new CommandWrapper( command.getClass().getName(),
                             mapper.writeValueAsString( command ) );
-                    restTemplate.postForEntity( url, wrapper, String.class );
-                    log.info( "Aggregate '{}': received response from {}", command.aggregateId(), url );
+                    ResponseEntity<String> response = restTemplate.
+                            postForEntity( url, wrapper, String.class );
+                    log.info( "Aggregate '{}': received response from {}. API call returned HTTP {}",
+                            command.aggregateId(), url, response.getStatusCodeValue() );
                     return completedFuture( new Result( "OK" ) );
                 }
                 catch ( HttpClientErrorException e ) {
-                    log.error( "Aggregate '{}' Remote error: instance {} returned HTTP {}", command.aggregateId(),
+                    log.error( "Aggregate '{}' Remote API error: instance {} returned HTTP {}", command.aggregateId(),
                             url, e.getRawStatusCode() );
                     switch ( e.getRawStatusCode() ) {
                         case 409:

@@ -34,6 +34,7 @@ public class QueryController {
             String key = KeyBuilder.key( tenantId, userId );
             Optional<String> appOpt = appService.stateAsJson( key );
             if ( appOpt.isPresent() ) {
+                log.info( "Returning data of App [tenant {}, user {}]", tenantId, userId );
                 return ResponseEntity.ok().body( appOpt.get() );
             }
             else {

@@ -54,8 +54,11 @@ public class AppCommandHandler implements CommandHandler<App> {
                 }
             }
             else if ( command.getClass().isAssignableFrom( AddWidgetCommand.class ) ) {
-                log.info( "Processing command {} on aggregate {}", command.getClass().getSimpleName(), currentState );
+
                 if ( currentState != null ) {
+                    log.info( "Processing command {} on aggregate {}", command.getClass().getSimpleName(),
+                            currentState.getKey() );
+
                     if ( currentState.getVersion() != command.expectedVersion() ) {
                         log.error( "App '{}' - command version mismatch detected. Throwing CommandException", command.aggregateId() );
                         throw new CommandException( "Version mismatch: command version '" +
