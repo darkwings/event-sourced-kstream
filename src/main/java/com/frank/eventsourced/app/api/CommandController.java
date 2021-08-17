@@ -28,29 +28,29 @@ public class CommandController {
     private CommandDispatcher commandDispatcher;
 
     @PostMapping(value = "/app/{tenantId}/{userId}",
-            produces = { MediaType.APPLICATION_JSON_UTF8_VALUE, MediaType.TEXT_PLAIN_VALUE })
-    public Mono<Result> create( @PathVariable("tenantId") String tenantId,
-                                @PathVariable("userId") String userId ) throws CommandException {
+            produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    public Mono<Result> create(@PathVariable("tenantId") String tenantId,
+                               @PathVariable("userId") String userId) throws CommandException {
         CreateAppCommand command = CreateAppCommand.builder().
-                tenantId( tenantId ).
-                userId( userId ).
+                tenantId(tenantId).
+                userId(userId).
                 build();
 
-        return fromCompletionStage( commandDispatcher.dispatch( command ) );
+        return fromCompletionStage(commandDispatcher.dispatch(command));
     }
 
     @PostMapping(value = "/app/{tenantId}/{userId}/widgets",
-            produces = { MediaType.APPLICATION_JSON_UTF8_VALUE, MediaType.TEXT_PLAIN_VALUE })
-    public Mono<Result> createItem( @PathVariable("tenantId") String tenantId,
-                                    @PathVariable("userId") String userId,
-                                    @RequestBody WidgetBean itemBean ) throws CommandException {
+            produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    public Mono<Result> createItem(@PathVariable("tenantId") String tenantId,
+                                   @PathVariable("userId") String userId,
+                                   @RequestBody WidgetBean itemBean) throws CommandException {
         AddWidgetCommand command = AddWidgetCommand.builder().
-                tenantId( tenantId ).userId( userId ).
-                widgetId( itemBean.getWidgetId() ).
-                version( itemBean.getVersion() ).
-                meta( itemBean.getMeta() ).
-                data( itemBean.getData() ).build();
+                tenantId(tenantId).userId(userId).
+                widgetId(itemBean.getWidgetId()).
+                version(itemBean.getVersion()).
+                meta(itemBean.getMeta()).
+                data(itemBean.getData()).build();
 
-        return fromCompletionStage( commandDispatcher.dispatch( command ) );
+        return fromCompletionStage(commandDispatcher.dispatch(command));
     }
 }

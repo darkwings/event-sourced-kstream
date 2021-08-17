@@ -76,24 +76,43 @@ public class ClientUtils {
         return props;
     }
 
-    public static <T> Producer<String, T> startProducer(String bootstrapServers,
-                                                        String schemaRegistryUrl,
-                                                        String clientId,
-                                                        String transactionId) {
+    /**
+     * Creates a Kafka producer optimized for durability
+     *
+     * @param bootstrapServers the broker csv
+     * @param schemaRegistryUrl the schema registryURL
+     * @param clientId the provided clientID
+     * @param transactionId the provided transation ID
+     * @param <T> the object to be published
+     * @return a configured (for durability) Kafka producer
+     */
+    public static <T> Producer<String, T> startDurabilityOptimizedProducer(String bootstrapServers,
+                                                                           String schemaRegistryUrl,
+                                                                           String clientId,
+                                                                           String transactionId) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
+
+        // all broker should ack
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+
+
+        // Transaction support
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionId);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+
         props.put(ProducerConfig.RETRIES_CONFIG, MAX_VALUE);
-        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
+
+        // con idempotent producer potremmo anche usare il valore di default
+        // props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
 
         // Serializers
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
 
-        props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+
 
         // https://github.com/confluentinc/schema-registry/pull/680
         props.put(KafkaAvroSerializerConfig.VALUE_SUBJECT_NAME_STRATEGY,

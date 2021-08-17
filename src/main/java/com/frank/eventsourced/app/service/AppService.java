@@ -22,7 +22,6 @@ import org.springframework.web.client.RestTemplate;
  * @author ftorriani
  */
 @Component
-@DependsOn("schema")
 @Qualifier("appService")
 public class AppService extends EventSourcingService<App> {
 
@@ -42,27 +41,29 @@ public class AppService extends EventSourcingService<App> {
                       @Value("${state.dir}") String stateDir,
                       @Value("${server.host:localhost}") String serverHost,
                       @Value("${server.port}") int serverPort,
+                      Schema schema,
                       RestTemplate restTemplate,
                       EventHandler<App> eventHandler,
-                      CommandHandler<App> commandHandler, Publisher publisher,
+                      CommandHandler<App> commandHandler,
+                      Publisher publisher,
                       @Value("${app.stream.name:app-stream}") String streamName) {
-        super( bootstrapServers,
+        super(bootstrapServers,
                 schemaRegistryUrl,
                 stateDir,
                 serverHost,
                 serverPort,
                 restTemplate,
-                Schema.Topics.APP_EVENTS,
-                Schema.Topics.APP_VIEW,
+                schema.eventLogTopic(),
+                schema.stateTopic(),
                 eventHandler,
                 commandHandler,
                 publisher,
-                streamName );
+                streamName);
     }
 
     @Override
     protected AvroJsonConverter<App> avroJsonConverter() {
-        return AvroJsonConverter.fromClass( App.class );
+        return AvroJsonConverter.fromClass(App.class);
     }
 
     @Override
@@ -71,10 +72,10 @@ public class AppService extends EventSourcingService<App> {
     }
 
     @Override
-    protected String remoteStateUrl( String key, HostStoreInfo hostStoreInfo ) {
-        String[] unkey = KeyBuilder.split( key );
+    protected String remoteStateUrl(String key, HostStoreInfo hostStoreInfo) {
+        String[] splitKey = KeyBuilder.split(key);
         return "http://" + hostStoreInfo.getHost() + ":" + hostStoreInfo.getPort() +
-                "/app/" + unkey[ 0 ] + "/" + unkey[ 1 ];
+                "/app/" + splitKey[0] + "/" + splitKey[1];
     }
 
     @Override

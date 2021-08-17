@@ -14,12 +14,10 @@ import com.frank.eventsourced.common.utils.ClientUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.http.ResponseEntity;
@@ -42,10 +40,10 @@ import static org.apache.kafka.streams.state.StreamsMetadata.NOT_AVAILABLE;
 /**
  * Base class for event sourcing service
  *
- * @param <S> the state (the aggregate)
+ * @param <A> the state (the aggregate)
  */
 @Log4j2
-public abstract class EventSourcingService<S extends SpecificRecord> implements Service {
+public abstract class EventSourcingService<A extends SpecificRecord> implements Service {
 
     private static final String CALL_TIMEOUT = "10000";
 
@@ -59,15 +57,15 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
     private StreamsMetadataService streamsMetadataService;
     private final KafkaStreams streams;
 
-    private final EventHandler<S> eventHandler;
-    private final CommandHandler<S> commandHandler;
+    private final EventHandler<A> eventHandler;
+    private final CommandHandler<A> commandHandler;
 
     private final RestTemplate restTemplate;
 
-    private final AvroJsonConverter<S> avroJsonConverter;
+    private final AvroJsonConverter<A> avroJsonConverter;
 
     private final TopicSerDe<String, SpecificRecord> eventLog;
-    private final TopicSerDe<String, S> stateTopic;
+    private final TopicSerDe<String, A> stateTopic;
 
     private final Publisher publisher;
 
@@ -78,9 +76,9 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
                                    int serverPort,
                                    RestTemplate restTemplate,
                                    TopicSerDe<String, SpecificRecord> eventLog,
-                                   TopicSerDe<String, S> stateTopic,
-                                   EventHandler<S> eventHandler,
-                                   CommandHandler<S> commandHandler,
+                                   TopicSerDe<String, A> stateTopic,
+                                   EventHandler<A> eventHandler,
+                                   CommandHandler<A> commandHandler,
                                    Publisher publisher, String streamName) {
 
         this.serviceId = getClass().getName();
@@ -109,7 +107,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
         }
     }
 
-    protected abstract AvroJsonConverter<S> avroJsonConverter();
+    protected abstract AvroJsonConverter<A> avroJsonConverter();
 
     protected abstract String stateStoreName();
 
@@ -135,7 +133,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
         StreamsBuilder builder = new StreamsBuilder();
 
         // State table
-        KTable<String, S> stateTable =
+        KTable<String, A> stateTable =
                 builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
                         Materialized.as(stateStoreName()));
 
@@ -152,7 +150,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
         return builder;
     }
 
-    protected abstract Initializer<S> initializer();
+    protected abstract Initializer<A> initializer();
 
 //    private StreamsBuilder createTopology() {
 //        StreamsBuilder builder = new StreamsBuilder();
@@ -177,7 +175,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
         return props;
     }
 
-    private ReadOnlyKeyValueStore<String, S> viewStore() {
+    private ReadOnlyKeyValueStore<String, A> viewStore() {
         return streams.store(fromNameAndType(stateStoreName(), QueryableStoreTypes.keyValueStore()));
     }
 
@@ -273,7 +271,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param aggregateId the state ID
      * @return the found State, if any
      */
-    public Optional<S> state(String aggregateId) {
+    public Optional<A> state(String aggregateId) {
         return internalStateRetrieve(aggregateId,
                 () -> viewStore().get(aggregateId),
                 remoteUrl -> {
@@ -310,7 +308,7 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
                 () -> {
                     log.info("Aggregate '{}' is available locally", aggregateId);
                     try {
-                        S record = viewStore().get(aggregateId);
+                        A record = viewStore().get(aggregateId);
                         return record != null ? avroJsonConverter.encodeToJson(record) : null;
                     } catch (IOException e) {
                         log.error("Failed to convert state", e);

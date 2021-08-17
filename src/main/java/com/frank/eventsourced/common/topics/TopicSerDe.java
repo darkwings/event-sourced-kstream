@@ -1,22 +1,24 @@
 package com.frank.eventsourced.common.topics;
 
-import com.frank.eventsourced.app.schema.Schema;
+import lombok.ToString;
 import org.apache.kafka.common.serialization.Serde;
 
 /**
+ * Keeps information about serializer and deserializer of a topic
+ *
  * @author ftorriani
  */
+@ToString
 public class TopicSerDe<K, V> {
 
-    private String name;
-    private Serde<K> keySerde;
-    private Serde<V> valueSerde;
+    private final String name;
+    private final Serde<K> keySerde;
+    private final Serde<V> valueSerde;
 
     public TopicSerDe(String name, Serde<K> keySerde, Serde<V> valueSerde) {
         this.name = name;
         this.keySerde = keySerde;
         this.valueSerde = valueSerde;
-        Schema.Topics.ALL.put(name, this);
     }
 
     public Serde<K> keySerde() {
@@ -28,10 +30,6 @@ public class TopicSerDe<K, V> {
     }
 
     public String name() {
-        return name;
-    }
-
-    public String toString() {
         return name;
     }
 }

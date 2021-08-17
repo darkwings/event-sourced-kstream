@@ -3,7 +3,6 @@ package com.frank.eventsourced.common.publisher;
 import com.frank.eventsourced.common.utils.EventUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 
-import static com.frank.eventsourced.common.utils.ClientUtils.startProducer;
+import static com.frank.eventsourced.common.utils.ClientUtils.startDurabilityOptimizedProducer;
 
 /**
  * @author ftorriani
@@ -26,7 +25,7 @@ public class Publisher {
                      @Value("${schema.registry.url}") String schemaRegistryUrl,
                      @Value("${client.id}") String clientId,
                      @Value("${transaction.id}") String transactionId) {
-        this.producer = startProducer(bootstrapServers, schemaRegistryUrl, clientId, transactionId);
+        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId, transactionId);
     }
 
     public void publish(String topic, Collection<SpecificRecord> specificRecords) {
@@ -44,6 +43,4 @@ public class Publisher {
             producer.abortTransaction();
         }
     }
-
-
 }
