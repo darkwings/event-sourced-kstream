@@ -36,6 +36,10 @@ public class TopicSerDe<K, V> {
         return name;
     }
 
+    public void configureKeySerDe(String schemaRegistryUrl) {
+        keySerde.configure(singletonMap(SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl), false);
+    }
+
     public void configureValueSerDe(String schemaRegistryUrl) {
         valueSerde.configure(singletonMap(SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl), false);
     }
