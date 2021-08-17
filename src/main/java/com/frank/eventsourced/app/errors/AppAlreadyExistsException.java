@@ -5,11 +5,11 @@ package com.frank.eventsourced.app.errors;
  */
 public class AppAlreadyExistsException extends RuntimeException {
 
-    public AppAlreadyExistsException( String message ) {
-        super( message );
+    public AppAlreadyExistsException(String message) {
+        super(message);
     }
 
-    public AppAlreadyExistsException( String message, Throwable cause ) {
-        super( message, cause );
+    public AppAlreadyExistsException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

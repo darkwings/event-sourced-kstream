@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Clock;
 import java.util.Map;
 
 import static com.frank.eventsourced.app.utils.KeyBuilder.key;
@@ -14,7 +15,6 @@ import static com.frank.eventsourced.app.utils.KeyBuilder.key;
  * @author ftorriani
  */
 
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Getter
@@ -26,14 +26,24 @@ public class AddWidgetCommand implements Command {
     Map<String, String> meta;
     Map<String, String> data;
     int version;
+    long timestampMs;
+
+    private AddWidgetCommand() {
+        timestampMs = Clock.systemUTC().millis();
+    }
 
     @Override
     public String aggregateId() {
-        return key( tenantId, userId );
+        return key(tenantId, userId);
     }
 
     @Override
     public int expectedVersion() {
         return version;
+    }
+
+    @Override
+    public long timestampMs() {
+        return timestampMs;
     }
 }

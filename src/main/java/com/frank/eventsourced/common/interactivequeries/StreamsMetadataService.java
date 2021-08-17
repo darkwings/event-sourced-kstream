@@ -2,6 +2,8 @@ package com.frank.eventsourced.common.interactivequeries;
 
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyQueryMetadata;
+import org.apache.kafka.streams.state.HostInfo;
 import org.apache.kafka.streams.state.StreamsMetadata;
 
 import java.util.Collection;
@@ -17,7 +19,7 @@ public class StreamsMetadataService {
 
     private final KafkaStreams streams;
 
-    public StreamsMetadataService( final KafkaStreams streams ) {
+    public StreamsMetadataService(final KafkaStreams streams) {
         this.streams = streams;
     }
 
@@ -28,10 +30,10 @@ public class StreamsMetadataService {
      * @param store The store to locate
      * @return List of {@link HostStoreInfo}
      */
-    public List<HostStoreInfo> streamsMetadataForStore( final String store ) {
+    public List<HostStoreInfo> streamsMetadataForStore(final String store) {
         // Get metadata for all of the instances of this Kafka Streams application hosting the store
-        final Collection<StreamsMetadata> metadata = streams.allMetadataForStore( store );
-        return mapInstancesToHostStoreInfo( metadata );
+        final Collection<StreamsMetadata> metadata = streams.allMetadataForStore(store);
+        return mapInstancesToHostStoreInfo(metadata);
     }
 
     /**
@@ -42,26 +44,23 @@ public class StreamsMetadataService {
      * @param key   The key to find
      * @return {@link HostStoreInfo}
      */
-    public <K> Optional<HostStoreInfo> streamsMetadataForStoreAndKey( final String store,
-                                                                      final K key,
-                                                                      final Serializer<K> serializer ) {
+    public <K> Optional<HostStoreInfo> streamsMetadataForStoreAndKey(final String store,
+                                                                     final K key,
+                                                                     final Serializer<K> serializer) {
         // Get metadata for the instances of this Kafka Streams application hosting the store and
         // potentially the value for key
-        final StreamsMetadata metadata = streams.metadataForKey( store, key, serializer );
-        if ( metadata == null ) {
+        final KeyQueryMetadata metadata = streams.queryMetadataForKey(store, key, serializer);
+        if (metadata == null) {
             return Optional.empty();
         }
+        HostInfo hostInfo = metadata.activeHost();
 
-        return Optional.of( new HostStoreInfo( metadata.host(),
-                metadata.port(),
-                metadata.stateStoreNames() ) );
+        return Optional.of(new HostStoreInfo(hostInfo.host(), hostInfo.port()));
     }
 
     private List<HostStoreInfo> mapInstancesToHostStoreInfo(
-            final Collection<StreamsMetadata> metadatas ) {
-        return metadatas.stream().map( metadata -> new HostStoreInfo( metadata.host(),
-                metadata.port(),
-                metadata.stateStoreNames() ) )
-                .collect( Collectors.toList() );
+            final Collection<StreamsMetadata> metadata) {
+        return metadata.stream().map(md -> new HostStoreInfo(md.host(), md.port()))
+                .collect(Collectors.toList());
     }
 }

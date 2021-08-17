@@ -32,23 +32,23 @@ public class RemoteConfiguration {
 
     public HttpComponentsClientHttpRequestFactory customHttpRequestFactory() {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setDefaultMaxPerRoute( defaultMaxPerRoute );
-        connectionManager.setMaxTotal( maxTotal );
+        connectionManager.setDefaultMaxPerRoute(defaultMaxPerRoute);
+        connectionManager.setMaxTotal(maxTotal);
 
         HttpComponentsClientHttpRequestFactory rf = new HttpComponentsClientHttpRequestFactory(
                 HttpClientBuilder.create().
-                        setConnectionManager( connectionManager ).
-                        build() );
+                        setConnectionManager(connectionManager).
+                        build());
 
-        rf.setConnectionRequestTimeout( connectionRequestTimeout );
-        rf.setReadTimeout( readTimeout );
-        rf.setConnectTimeout( connectTimeout );
+        rf.setConnectionRequestTimeout(connectionRequestTimeout);
+        rf.setReadTimeout(readTimeout);
+        rf.setConnectTimeout(connectTimeout);
         return rf;
     }
 
     @Bean
     @ConditionalOnMissingBean
     public RestTemplate restTemplate() {
-        return new RestTemplate( customHttpRequestFactory() );
+        return new RestTemplate(customHttpRequestFactory());
     }
 }

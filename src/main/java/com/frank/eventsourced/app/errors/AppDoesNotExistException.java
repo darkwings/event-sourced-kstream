@@ -5,11 +5,11 @@ package com.frank.eventsourced.app.errors;
  */
 public class AppDoesNotExistException extends RuntimeException {
 
-    public AppDoesNotExistException( String message ) {
-        super( message );
+    public AppDoesNotExistException(String message) {
+        super(message);
     }
 
-    public AppDoesNotExistException( String message, Throwable cause ) {
-        super( message, cause );
+    public AppDoesNotExistException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

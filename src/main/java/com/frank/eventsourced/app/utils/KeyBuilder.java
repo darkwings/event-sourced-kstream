@@ -8,27 +8,25 @@ import java.util.Optional;
  */
 public class KeyBuilder {
 
-    public static String key( String tenantId, String userId ) {
+    public static String key(String tenantId, String userId) {
         return tenantId + "|" + userId;
     }
 
-    public static String[] split( String key ) {
-        return key.split( "\\|" );
+    public static String[] split(String key) {
+        return key.split("\\|");
     }
 
-    public static Optional<String> keyOf( Object event ) {
+    public static Optional<String> keyOf(Object event) {
         try {
-            Method m = event.getClass().getMethod( "getKey" );
-            String key = (String) m.invoke( event );
-            return Optional.of( key );
-        }
-        catch ( Exception e ) {
+            Method m = event.getClass().getMethod("getKey");
+            String key = (String) m.invoke(event);
+            return Optional.of(key);
+        } catch (Exception e) {
             try {
-                Method m = event.getClass().getMethod( "aggregateId" );
-                String key = (String) m.invoke( event );
-                return Optional.of( key );
-            }
-            catch ( Exception e1 ) {
+                Method m = event.getClass().getMethod("aggregateId");
+                String key = (String) m.invoke(event);
+                return Optional.of(key);
+            } catch (Exception e1) {
                 return Optional.empty();
             }
         }

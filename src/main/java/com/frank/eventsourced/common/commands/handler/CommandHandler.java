@@ -8,16 +8,16 @@ import java.util.Optional;
 
 /**
  * The command handler. It validates the command given the business rules of the domain
+ *
  * @param <A> the aggregate
  */
 public interface CommandHandler<A> {
 
     /**
-     *
-     * @param command the command
+     * @param command   the command
      * @param aggregate the aggregate
      * @return the event
      * @throws CommandException if command is unknown
      */
-    Optional<SpecificRecord> apply( Command command, A aggregate ) throws CommandException;
+    Optional<SpecificRecord> apply(Command command, A aggregate) throws CommandException;
 }

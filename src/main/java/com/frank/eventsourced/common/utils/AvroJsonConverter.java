@@ -23,7 +23,7 @@ import java.nio.charset.Charset;
  */
 public class AvroJsonConverter<T extends SpecificRecord> {
 
-    private static final Charset UTF8 = Charset.forName( "UTF-8" );
+    private static final Charset UTF8 = Charset.forName("UTF-8");
     private static final String SCHEMA_FIELD_NAME = "SCHEMA$";
 
     Schema schema;
@@ -32,27 +32,25 @@ public class AvroJsonConverter<T extends SpecificRecord> {
     JsonDecoder jsonDecoder;
     JsonEncoder jsonEncoder;
 
-    public static AvroJsonConverter fromType( String className ) {
+    public static AvroJsonConverter fromType(String className) {
 
         try {
-            Class klass = Class.forName( className );
-            Field f = klass.getField( SCHEMA_FIELD_NAME );
-            Schema schema = (Schema) f.get( null );
-            return new AvroJsonConverter( schema, klass );
-        }
-        catch ( Exception e ) {
+            Class klass = Class.forName(className);
+            Field f = klass.getField(SCHEMA_FIELD_NAME);
+            Schema schema = (Schema) f.get(null);
+            return new AvroJsonConverter(schema, klass);
+        } catch (Exception e) {
             return null;
         }
     }
 
-    public static <T extends SpecificRecordBase> AvroJsonConverter<T> fromClass( Class<T> klass ) {
+    public static <T extends SpecificRecordBase> AvroJsonConverter<T> fromClass(Class<T> klass) {
 
         try {
-            Field f = klass.getField( SCHEMA_FIELD_NAME );
-            Schema schema = (Schema) f.get( null );
-            return new AvroJsonConverter<>( schema, klass );
-        }
-        catch ( Exception e ) {
+            Field f = klass.getField(SCHEMA_FIELD_NAME);
+            Schema schema = (Schema) f.get(null);
+            return new AvroJsonConverter<>(schema, klass);
+        } catch (Exception e) {
             return null;
         }
     }
@@ -63,11 +61,11 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @param schema             the schema
      * @param typeParameterClass the type parameter class
      */
-    private AvroJsonConverter( Schema schema, Class<T> typeParameterClass ) {
+    private AvroJsonConverter(Schema schema, Class<T> typeParameterClass) {
         super();
         this.schema = schema;
-        avroReader = new SpecificDatumReader<T>( typeParameterClass );
-        avroWriter = new SpecificDatumWriter<T>( typeParameterClass );
+        avroReader = new SpecificDatumReader<T>(typeParameterClass);
+        avroWriter = new SpecificDatumWriter<T>(typeParameterClass);
     }
 
     /**
@@ -77,8 +75,8 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @return the decoded object
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public T decodeJson( String data ) throws IOException {
-        return decodeJson( data, null );
+    public T decodeJson(String data) throws IOException {
+        return decodeJson(data, null);
     }
 
     /**
@@ -88,8 +86,8 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @return the decoded object
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public T decodeJson( byte[] data ) throws IOException {
-        return decodeJson( new String( data, UTF8 ), null );
+    public T decodeJson(byte[] data) throws IOException {
+        return decodeJson(new String(data, UTF8), null);
     }
 
     /**
@@ -100,9 +98,9 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @return the decoded object
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public T decodeJson( String data, T reuse ) throws IOException {
-        jsonDecoder = DecoderFactory.get().jsonDecoder( this.schema, data );
-        return avroReader.read( null, jsonDecoder );
+    public T decodeJson(String data, T reuse) throws IOException {
+        jsonDecoder = DecoderFactory.get().jsonDecoder(this.schema, data);
+        return avroReader.read(null, jsonDecoder);
     }
 
     /**
@@ -112,8 +110,8 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @return the string
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public String encodeToJson( T record ) throws IOException {
-        return new String( encodeToJsonBytes( record ), UTF8 );
+    public String encodeToJson(T record) throws IOException {
+        return new String(encodeToJsonBytes(record), UTF8);
     }
 
     /**
@@ -123,10 +121,10 @@ public class AvroJsonConverter<T extends SpecificRecord> {
      * @return the byte[]
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public byte[] encodeToJsonBytes( T record ) throws IOException {
+    public byte[] encodeToJsonBytes(T record) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        jsonEncoder = EncoderFactory.get().jsonEncoder( this.schema, baos, true );
-        avroWriter.write( record, jsonEncoder );
+        jsonEncoder = EncoderFactory.get().jsonEncoder(this.schema, baos, true);
+        avroWriter.write(record, jsonEncoder);
         jsonEncoder.flush();
         baos.flush();
         return baos.toByteArray();

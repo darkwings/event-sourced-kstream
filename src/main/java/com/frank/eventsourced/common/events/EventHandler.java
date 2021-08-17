@@ -15,10 +15,10 @@ public interface EventHandler<S extends SpecificRecord> {
      * This method should not return a {@code null} value. In case of error, the method
      * should return the {@code currentState}
      *
-     * @param event the event
+     * @param event        the event
      * @param currentState the current state of the aggregate
      * @return the updated state
      * @throws EventHandlerException in case of error
      */
-    S apply( SpecificRecord event, S currentState );
+    S apply(SpecificRecord event, S currentState);
 }

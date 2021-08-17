@@ -8,4 +8,6 @@ public interface Command {
     String aggregateId();
 
     int expectedVersion();
+
+    long timestampMs();
 }

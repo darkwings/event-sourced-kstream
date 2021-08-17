@@ -6,7 +6,7 @@ import com.frank.eventsourced.events.platform.app.AppCreated;
 import com.frank.eventsourced.events.platform.app.WidgetAdded;
 import com.frank.eventsourced.model.app.App;
 import com.frank.eventsourced.model.app.Widget;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -16,59 +16,55 @@ import java.util.ArrayList;
 /**
  * @author ftorriani
  */
-@Slf4j
+@Log4j2
 @Component
 @Qualifier("appEvent")
 public class AppEventHandler implements EventHandler<App> {
 
-    public App apply( SpecificRecord event, App currentState ) {
+    public App apply(SpecificRecord event, App currentState) {
 
         try {
-            if ( event.getClass().isAssignableFrom( AppCreated.class ) ) {
+            if (event.getClass().isAssignableFrom(AppCreated.class)) {
                 AppCreated appCreated = (AppCreated) event;
-                log.info( "Applying creation event '{}' [{}]",
+                log.info("Applying creation event '{}' [{}]",
                         appCreated.getClass().getName(),
-                        appCreated );
+                        appCreated);
                 return App.newBuilder().
-                        setKey( appCreated.getTenantId() + "|" + appCreated.getUserId() ).
-                        setTenantId( appCreated.getTenantId() ).
-                        setUserId( appCreated.getUserId() ).
-                        setWidgets( new ArrayList<>() ).
-                        setVersion( 0 ).
+                        setKey(appCreated.getTenantId() + "|" + appCreated.getUserId()).
+                        setTenantId(appCreated.getTenantId()).
+                        setUserId(appCreated.getUserId()).
+                        setWidgets(new ArrayList<>()).
+                        setVersion(0).
                         build();
-            }
-            else if ( event.getClass().isAssignableFrom( WidgetAdded.class ) ) {
-                App updatedState = App.newBuilder( currentState ).build();
+            } else if (event.getClass().isAssignableFrom(WidgetAdded.class)) {
+                App updatedState = App.newBuilder(currentState).build();
 
                 WidgetAdded itemAdded = (WidgetAdded) event;
-                log.info( "Applying event '{}' [{}] to app '{}'", event.getClass().getName(), itemAdded,
-                        currentState.getKey() );
+                log.info("Applying event '{}' [{}] to app '{}'", event.getClass().getName(), itemAdded,
+                        currentState.getKey());
                 Widget modelItem = Widget.newBuilder().
-                        setWidgetId( itemAdded.getWidget().getWidgetId() ).
-                        setData( itemAdded.getWidget().getData() ).
-                        setMeta( itemAdded.getWidget().getMeta() ).
+                        setWidgetId(itemAdded.getWidget().getWidgetId()).
+                        setData(itemAdded.getWidget().getData()).
+                        setMeta(itemAdded.getWidget().getMeta()).
                         build();
-                updatedState.getWidgets().add( modelItem );
+                updatedState.getWidgets().add(modelItem);
 
-                updateVersion( updatedState, currentState );
-                
+                updateVersion(updatedState, currentState);
+
                 return updatedState;
+            } else {
+                throw new EventHandlerException("Unknown event " + event.getClass().getName());
             }
-            else {
-                throw new EventHandlerException( "Unknown event " + event.getClass().getName() );
-            }
-        }
-        catch ( EventHandlerException e ) {
+        } catch (EventHandlerException e) {
             throw e;
-        }
-        catch ( Exception e ) {
-            log.error( "Failed to handle event (payload : {}). Rethrowing exception as EventHandlerException",
-                    event.getClass().getName() );
-            throw new EventHandlerException( "Failed to handle event", e );
+        } catch (Exception e) {
+            log.error("Failed to handle event (payload : {}). Rethrowing exception as EventHandlerException",
+                    event.getClass().getName());
+            throw new EventHandlerException("Failed to handle event", e);
         }
     }
 
-    private void updateVersion( App newState, App currentState ) {
-        newState.setVersion( currentState.getVersion() + 1 );
+    private void updateVersion(App newState, App currentState) {
+        newState.setVersion(currentState.getVersion() + 1);
     }
 }

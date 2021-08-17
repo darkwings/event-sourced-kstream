@@ -3,21 +3,24 @@ package com.frank.eventsourced.common.eventsourcing;
 import com.frank.eventsourced.common.Service;
 import com.frank.eventsourced.common.commands.beans.Command;
 import com.frank.eventsourced.common.commands.handler.CommandHandler;
-import com.frank.eventsourced.common.exceptions.CommandException;
 import com.frank.eventsourced.common.events.EventHandler;
+import com.frank.eventsourced.common.exceptions.CommandException;
 import com.frank.eventsourced.common.interactivequeries.HostStoreInfo;
 import com.frank.eventsourced.common.interactivequeries.StreamsMetadataService;
 import com.frank.eventsourced.common.publisher.Publisher;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.common.utils.AvroJsonConverter;
 import com.frank.eventsourced.common.utils.ClientUtils;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +35,8 @@ import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.apache.kafka.streams.StoreQueryParameters.fromNameAndType;
+import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD;
 import static org.apache.kafka.streams.state.StreamsMetadata.NOT_AVAILABLE;
 
 /**
@@ -39,55 +44,50 @@ import static org.apache.kafka.streams.state.StreamsMetadata.NOT_AVAILABLE;
  *
  * @param <S> the state (the aggregate)
  */
-@Slf4j
+@Log4j2
 public abstract class EventSourcingService<S extends SpecificRecord> implements Service {
 
     private static final String CALL_TIMEOUT = "10000";
 
-    private String serviceId;
-    private String bootstrapServers;
-    private String schemaRegistryUrl;
-    private String stateDir;
-    private String clientId;
-    private String serverHost;
-    private int serverPort;
+    private final String serviceId;
+    private final String bootstrapServers;
+    private final String schemaRegistryUrl;
+    private final String stateDir;
+    private final String serverHost;
+    private final int serverPort;
 
     private StreamsMetadataService streamsMetadataService;
-    private KafkaStreams streams;
+    private final KafkaStreams streams;
 
-    private EventHandler<S> eventHandler;
-    private CommandHandler<S> commandHandler;
+    private final EventHandler<S> eventHandler;
+    private final CommandHandler<S> commandHandler;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
-    private AvroJsonConverter<S> avroJsonConverter;
+    private final AvroJsonConverter<S> avroJsonConverter;
 
-    private TopicSerDe<String, SpecificRecord> eventLog;
-    private TopicSerDe<String, S> stateTopic;
+    private final TopicSerDe<String, SpecificRecord> eventLog;
+    private final TopicSerDe<String, S> stateTopic;
 
-    private Publisher publisher;
+    private final Publisher publisher;
 
-    private String streamName;
-
-    protected EventSourcingService( String bootstrapServers,
-                                    String schemaRegistryUrl,
-                                    String stateDir,
-                                    String clientId,
-                                    String serverHost,
-                                    int serverPort,
-                                    RestTemplate restTemplate,
-                                    TopicSerDe<String, SpecificRecord> eventLog,
-                                    TopicSerDe<String, S> stateTopic,
-                                    EventHandler<S> eventHandler,
-                                    CommandHandler<S> commandHandler,
-                                    Publisher publisher, String streamName ) {
+    protected EventSourcingService(String bootstrapServers,
+                                   String schemaRegistryUrl,
+                                   String stateDir,
+                                   String serverHost,
+                                   int serverPort,
+                                   RestTemplate restTemplate,
+                                   TopicSerDe<String, SpecificRecord> eventLog,
+                                   TopicSerDe<String, S> stateTopic,
+                                   EventHandler<S> eventHandler,
+                                   CommandHandler<S> commandHandler,
+                                   Publisher publisher, String streamName) {
 
         this.serviceId = getClass().getName();
 
         this.bootstrapServers = bootstrapServers;
         this.schemaRegistryUrl = schemaRegistryUrl;
         this.stateDir = stateDir;
-        this.clientId = clientId;
         this.eventHandler = eventHandler;
         this.commandHandler = commandHandler;
         this.serverHost = serverHost;
@@ -99,15 +99,13 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
 
         this.publisher = publisher;
 
-        this.streamName = streamName;
-
         avroJsonConverter = avroJsonConverter();
 
         streams = startKStreams();
         try {
-            ClientUtils.addShutdownHook( this );
-        }
-        catch ( InterruptedException e ) {
+            ClientUtils.addShutdownHook(this);
+        } catch (InterruptedException e) {
+            log.error("Error ", e);
         }
     }
 
@@ -116,96 +114,95 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
     protected abstract String stateStoreName();
 
     private KafkaStreams startKStreams() {
-        KafkaStreams streams = new KafkaStreams( createTopology().build(), streamsConfig() );
-        streamsMetadataService = new StreamsMetadataService( streams );
-        streams.setUncaughtExceptionHandler( ( t, e ) ->
-                log.error( String.format( "[Thread %s] error: %s", t.getName(), e.getMessage() ), e )
-        );
-        streams.setStateListener( ( newState, oldState ) -> {
-            log.info( "Stream {} (client ID {}): passing from state '{}' (running: {}) to '{}' (running: {})",
-                    streamName, clientId,
-                    oldState.name(), oldState.isRunning(),
-                    newState.name(), newState.isRunning() );
-        } );
+        KafkaStreams streams = new KafkaStreams(createTopology().build(), streamsConfig());
+        streamsMetadataService = new StreamsMetadataService(streams);
+        streams.setUncaughtExceptionHandler(exception -> {
+            log.error("Streams exception ", exception);
+            return REPLACE_THREAD;
+        });
+        streams.setStateListener((newState, oldState) -> {
+            log.info("Setting new state {} (old was {})", newState, oldState);
+            if (newState == KafkaStreams.State.REBALANCING) {
+                // Do anything that's necessary to manage rebalance
+                log.info("Rebalance in progress");
+            }
+        });
         streams.start();
         return streams;
     }
 
-    private StreamsBuilder createTopology() {
-        StreamsBuilder builder = new StreamsBuilder();
-
-        // State table
-        KTable<String, S> stateTable =
-                builder.table( stateTopic.name(), Consumed.with( stateTopic.keySerde(), stateTopic.valueSerde() ),
-                        Materialized.as( stateStoreName() ) );
-
-        // Event stream is in left join with the State Table
-        builder.stream( eventLog.name(),
-                Consumed.with( eventLog.keySerde(), eventLog.valueSerde() ) ).
-                leftJoin( stateTable, ( event, currentState ) -> eventHandler.apply( event, currentState ) ).
-                filter( ( key, state ) -> state != null ). // Just to ensure to not propagate null state
-                to( stateTopic.name(),
-                Produced.with( stateTopic.keySerde(), stateTopic.valueSerde() ) );
-
-        return builder;
-    }
-
-    protected abstract Initializer<S> initializer();
-
 //    private StreamsBuilder createTopology() {
 //        StreamsBuilder builder = new StreamsBuilder();
 //
-//        builder.stream( eventLog.name(), Consumed.with( eventLog.keySerde(), eventLog.valueSerde() ) ).
-//                groupByKey().
-//                aggregate( initializer(), ( key, event, state ) -> eventHandler.apply( event, state ),
-//                        Materialized.<String, S, KeyValueStore<Bytes, byte[]>>as( stateStoreName() ).
-//                                withKeySerde( stateTopic.keySerde() ).
-//                                withValueSerde( stateTopic.valueSerde() ) );
+//        // State table
+//        KTable<String, S> stateTable =
+//                builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
+//                        Materialized.as(stateStoreName()));
+//
+//        // Event stream is in left join with the State Table
+//        builder.stream(eventLog.name(),
+//                        Consumed.with(eventLog.keySerde(), eventLog.valueSerde())).
+//                leftJoin(stateTable, eventHandler::apply).
+//                filter((key, state) -> state != null). // Just to ensure to not propagate null state
+//                to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+//
 //        return builder;
 //    }
 
+    protected abstract Initializer<S> initializer();
+
+    private StreamsBuilder createTopology() {
+        StreamsBuilder builder = new StreamsBuilder();
+
+        builder.stream(eventLog.name(), Consumed.with(eventLog.keySerde(), eventLog.valueSerde())).
+                groupByKey().
+                aggregate(initializer(), (key, event, state) -> eventHandler.apply(event, state),
+                        Materialized.<String, S, KeyValueStore<Bytes, byte[]>>as(stateStoreName()).
+                                withKeySerde(stateTopic.keySerde()).
+                                withValueSerde(stateTopic.valueSerde()));
+        return builder;
+    }
+
     private Properties streamsConfig() {
-        Properties props = ClientUtils.streamsConfig( bootstrapServers, stateDir,
-                serviceId, schemaRegistryUrl );
-        log.info( "Setting serverHost: {} and port {}", serverHost, serverPort );
-        props.put( StreamsConfig.APPLICATION_SERVER_CONFIG, serverHost + ":" + serverPort );
+        Properties props = ClientUtils.streamsConfig(bootstrapServers, stateDir,
+                serviceId, schemaRegistryUrl);
+        log.info("Setting serverHost: {} and port {}", serverHost, serverPort);
+        props.put(StreamsConfig.APPLICATION_SERVER_CONFIG, serverHost + ":" + serverPort);
         return props;
     }
 
     private ReadOnlyKeyValueStore<String, S> viewStore() {
-        return streams.store( stateStoreName(), QueryableStoreTypes.keyValueStore() );
+        return streams.store(fromNameAndType(stateStoreName(), QueryableStoreTypes.keyValueStore()));
     }
 
-    private Optional<HostStoreInfo> getKeyLocation( String key ) {
-        Optional<HostStoreInfo> opt = hostForKey( key );
+    private Optional<HostStoreInfo> getKeyLocation(String key) {
+        Optional<HostStoreInfo> opt = hostForKey(key);
         int retry = 0;
-        if ( opt.isPresent() ) {
+        if (opt.isPresent()) {
             HostStoreInfo locationOfKey = opt.get();
-            while ( NOT_AVAILABLE.host().equals( locationOfKey.getHost() )
-                    && NOT_AVAILABLE.port() == locationOfKey.getPort() ) {
+            while (NOT_AVAILABLE.host().equals(locationOfKey.getHost())
+                    && NOT_AVAILABLE.port() == locationOfKey.getPort()) {
                 //The metastore is not available. This can happen on startup/rebalance.
-                if ( retry >= 10 ) {
-                    log.warn( "Reached the maximum number of retry. {} is starting or it is rebalancing",
-                            serviceId );
+                if (retry >= 10) {
+                    log.warn("Reached the maximum number of retry. {} is starting or it is rebalancing",
+                            serviceId);
                     return Optional.empty();
                 }
                 retry++;
                 try {
                     // Sleep a bit until metadata becomes available
-                    Thread.sleep( Math.min( Long.valueOf( CALL_TIMEOUT ), 200 ) );
-                }
-                catch ( InterruptedException e ) {
+                    Thread.sleep(Math.min(Long.valueOf(CALL_TIMEOUT), 200));
+                } catch (InterruptedException e) {
                 }
             }
             return opt;
-        }
-        else {
+        } else {
             return Optional.empty();
         }
     }
 
-    public boolean isLocal( HostStoreInfo host ) {
-        return host.getHost().equals( serverHost ) && host.getPort() == serverPort;
+    public boolean isLocal(HostStoreInfo host) {
+        return host.getHost().equals(serverHost) && host.getPort() == serverPort;
     }
 
     /**
@@ -214,10 +211,10 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param key the state key
      * @return the host store info
      */
-    public Optional<HostStoreInfo> hostForKey( String key ) {
+    public Optional<HostStoreInfo> hostForKey(String key) {
         return streamsMetadataService
-                .streamsMetadataForStoreAndKey( stateStoreName(), key,
-                        Serdes.String().serializer() );
+                .streamsMetadataForStoreAndKey(stateStoreName(), key,
+                        Serdes.String().serializer());
     }
 
 
@@ -227,16 +224,16 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param command the command
      * @throws CommandException if there is any problem submitting the command
      */
-    public void handleCommand( Command command ) throws CommandException {
-        commandHandler.apply( command, viewStore().get( command.aggregateId() ) ).
-                ifPresent( event -> {
-                    log.info( "handleCommand() for aggregate '{}'. Processed command {}. " +
+    public void handleCommand(Command command) throws CommandException {
+        commandHandler.apply(command, viewStore().get(command.aggregateId())).
+                ifPresent(event -> {
+                    log.info("handleCommand() for aggregate '{}'. Processed command {}. " +
                                     "Publishing event '{}' on topic '{}'",
                             command.aggregateId(),
                             command.getClass().getSimpleName(),
-                            event.getClass().getSimpleName(), eventLog.name() );
-                    publisher.publish( eventLog.name(), Collections.singletonList( event ) );
-                } );
+                            event.getClass().getSimpleName(), eventLog.name());
+                    publisher.publish(eventLog.name(), Collections.singletonList(event));
+                });
     }
 
     /**
@@ -249,20 +246,19 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param <T>            the object that represent the state
      * @return the state, as an {@link Optional}
      */
-    private <T> Optional<T> internalStateRetrieve( String aggregateId,
-                                                   Supplier<T> localOperator,
-                                                   Function<String, T> remoteOperator ) {
-        Optional<HostStoreInfo> hostForKey = getKeyLocation( aggregateId );
-        return hostForKey.map( hostStoreInfo -> {
-            if ( isLocal( hostStoreInfo ) ) {
-                log.debug( "State of aggregate {} is available locally", aggregateId );
+    private <T> Optional<T> internalStateRetrieve(String aggregateId,
+                                                  Supplier<T> localOperator,
+                                                  Function<String, T> remoteOperator) {
+        Optional<HostStoreInfo> hostForKey = getKeyLocation(aggregateId);
+        return hostForKey.map(hostStoreInfo -> {
+            if (isLocal(hostStoreInfo)) {
+                log.debug("State of aggregate {} is available locally", aggregateId);
                 return localOperator.get();
+            } else {
+                String url = remoteStateUrl(aggregateId, hostStoreInfo);
+                return remoteOperator.apply(url);
             }
-            else {
-                String url = remoteStateUrl( aggregateId, hostStoreInfo );
-                return remoteOperator.apply( url );
-            }
-        } );
+        });
     }
 
     /**
@@ -271,33 +267,30 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param aggregateId the state ID
      * @return the found State, if any
      */
-    public Optional<S> state( String aggregateId ) {
-        return internalStateRetrieve( aggregateId,
-                () -> viewStore().get( aggregateId ),
+    public Optional<S> state(String aggregateId) {
+        return internalStateRetrieve(aggregateId,
+                () -> viewStore().get(aggregateId),
                 remoteUrl -> {
-                    log.info( "Aggregate '{}' is available on another instance. Forwarding query to '{}'",
-                            aggregateId, remoteUrl );
+                    log.info("Aggregate '{}' is available on another instance. Forwarding query to '{}'",
+                            aggregateId, remoteUrl);
                     try {
-                        ResponseEntity<String> response = restTemplate.getForEntity( remoteUrl, String.class );
-                        log.info( "Aggregate '{}' Received response from {}", aggregateId, remoteUrl );
+                        ResponseEntity<String> response = restTemplate.getForEntity(remoteUrl, String.class);
+                        log.info("Aggregate '{}' Received response from {}", aggregateId, remoteUrl);
                         String json = response.getBody();
-                        return avroJsonConverter.decodeJson( json );
-                    }
-                    catch ( HttpClientErrorException e ) {
-                        if ( e.getRawStatusCode() == 404 ) {
-                            log.info( "Remote error: aggregate '{}' not existing on {}", aggregateId, remoteUrl );
+                        return avroJsonConverter.decodeJson(json);
+                    } catch (HttpClientErrorException e) {
+                        if (e.getRawStatusCode() == 404) {
+                            log.info("Remote error: aggregate '{}' not existing on {}", aggregateId, remoteUrl);
                             return null;
+                        } else {
+                            throw new RemoteStateException("Client error while retrieving " +
+                                    "remote aggregate '" + aggregateId + "'", e);
                         }
-                        else {
-                            throw new RemoteStateException( "Client error while retrieving " +
-                                    "remote aggregate '" + aggregateId + "'", e );
-                        }
+                    } catch (Exception e) {
+                        throw new RemoteStateException("Failed to retrieve remote " +
+                                "aggregate '" + aggregateId + "'", e);
                     }
-                    catch ( Exception e ) {
-                        throw new RemoteStateException( "Failed to retrieve remote " +
-                                "aggregate '" + aggregateId + "'", e );
-                    }
-                } );
+                });
     }
 
     /**
@@ -306,54 +299,50 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
      * @param aggregateId the state ID
      * @return the found State as JSON, if any
      */
-    public Optional<String> stateAsJson( String aggregateId ) {
-        return internalStateRetrieve( aggregateId,
+    public Optional<String> stateAsJson(String aggregateId) {
+        return internalStateRetrieve(aggregateId,
                 () -> {
-                    log.info( "Aggregate '{}' is available locally", aggregateId );
+                    log.info("Aggregate '{}' is available locally", aggregateId);
                     try {
-                        S record = viewStore().get( aggregateId );
-                        return record != null ? avroJsonConverter.encodeToJson( record ) : null;
-                    }
-                    catch ( IOException e ) {
-                        log.error( "Failed to convert state", e );
+                        S record = viewStore().get(aggregateId);
+                        return record != null ? avroJsonConverter.encodeToJson(record) : null;
+                    } catch (IOException e) {
+                        log.error("Failed to convert state", e);
                         return null;
                     }
                 },
                 remoteUrl -> {
-                    log.info( "Aggregate '{}' is available on another instance. Forwarding query to '{}'", aggregateId, remoteUrl );
+                    log.info("Aggregate '{}' is available on another instance. Forwarding query to '{}'", aggregateId, remoteUrl);
                     try {
-                        ResponseEntity<String> response = restTemplate.getForEntity( remoteUrl, String.class );
-                        log.info( "Aggregate '{}' Received response from {}", aggregateId, remoteUrl );
+                        ResponseEntity<String> response = restTemplate.getForEntity(remoteUrl, String.class);
+                        log.info("Aggregate '{}' Received response from {}", aggregateId, remoteUrl);
                         return response.getBody();
-                    }
-                    catch ( HttpClientErrorException e ) {
-                        if ( e.getRawStatusCode() == 404 ) {
-                            log.info( "Remote error: aggregate '{}' not existing on {}", aggregateId, remoteUrl );
+                    } catch (HttpClientErrorException e) {
+                        if (e.getRawStatusCode() == 404) {
+                            log.info("Remote error: aggregate '{}' not existing on {}", aggregateId, remoteUrl);
                             return null;
+                        } else {
+                            throw new RemoteStateException("Client error while retrieving " +
+                                    "remote aggregate '" + aggregateId + "'", e);
                         }
-                        else {
-                            throw new RemoteStateException( "Client error while retrieving " +
-                                    "remote aggregate '" + aggregateId + "'", e );
-                        }
+                    } catch (Exception e) {
+                        throw new RemoteStateException("Failed to retrieve remote " +
+                                "aggregate '" + aggregateId + "'", e);
                     }
-                    catch ( Exception e ) {
-                        throw new RemoteStateException( "Failed to retrieve remote " +
-                                "aggregate '" + aggregateId + "'", e );
-                    }
-                } );
+                });
     }
 
 
-    protected abstract String remoteStateUrl( String key, HostStoreInfo hostStoreInfo );
+    protected abstract String remoteStateUrl(String key, HostStoreInfo hostStoreInfo);
 
     public List<HostStoreInfo> allInfo() {
-        return streamsMetadataService.streamsMetadataForStore( stateStoreName() );
+        return streamsMetadataService.streamsMetadataForStore(stateStoreName());
     }
 
 
     @Override
     public void stop() {
-        if ( streams != null ) {
+        if (streams != null) {
             streams.close();
         }
     }

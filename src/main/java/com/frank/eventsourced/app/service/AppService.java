@@ -22,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
  * @author ftorriani
  */
 @Component
-@DependsOn("schemas")
+@DependsOn("schema")
 @Qualifier("appService")
 public class AppService extends EventSourcingService<App> {
 
@@ -37,20 +37,18 @@ public class AppService extends EventSourcingService<App> {
     private EventHandler<App> eventHandler;
 
     @Autowired
-    public AppService( @Value("${bootstrap.servers}") String bootstrapServers,
-                       @Value("${schema.registry.url}") String schemaRegistryUrl,
-                       @Value("${state.dir}") String stateDir,
-                       @Value("${client.id}") String clientId,
-                       @Value("${server.host:localhost}") String serverHost,
-                       @Value("${server.port}") int serverPort,
-                       RestTemplate restTemplate,
-                       EventHandler<App> eventHandler,
-                       CommandHandler<App> commandHandler, Publisher publisher,
-                       @Value("${app.stream.name:app-stream}") String streamName ) {
+    public AppService(@Value("${bootstrap.servers}") String bootstrapServers,
+                      @Value("${schema.registry.url}") String schemaRegistryUrl,
+                      @Value("${state.dir}") String stateDir,
+                      @Value("${server.host:localhost}") String serverHost,
+                      @Value("${server.port}") int serverPort,
+                      RestTemplate restTemplate,
+                      EventHandler<App> eventHandler,
+                      CommandHandler<App> commandHandler, Publisher publisher,
+                      @Value("${app.stream.name:app-stream}") String streamName) {
         super( bootstrapServers,
                 schemaRegistryUrl,
                 stateDir,
-                clientId,
                 serverHost,
                 serverPort,
                 restTemplate,

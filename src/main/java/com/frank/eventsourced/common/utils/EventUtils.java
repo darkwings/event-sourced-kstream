@@ -1,5 +1,8 @@
 package com.frank.eventsourced.common.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 
 import java.lang.reflect.Method;
@@ -8,11 +11,9 @@ import java.util.Optional;
 /**
  * @author ftorriani
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Log4j2
 public abstract class EventUtils {
-
-    private EventUtils() {
-
-    }
 
     public static <T extends SpecificRecord> String eventIdOf( T value ) {
         try {
@@ -31,6 +32,7 @@ public abstract class EventUtils {
             return Optional.of( key );
         }
         catch ( Exception e ) {
+            log.error("Failed to extract key", e);
             return Optional.empty();
         }
     }

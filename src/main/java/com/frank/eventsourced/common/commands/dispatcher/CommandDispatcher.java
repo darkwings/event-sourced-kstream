@@ -11,10 +11,10 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface CommandDispatcher {
 
-    default String remoteCommandConnectorUrl( HostStoreInfo hostStoreInfo ) {
+    default String remoteCommandConnectorUrl(HostStoreInfo hostStoreInfo) {
         return "http://" + hostStoreInfo.getHost() + ":" + hostStoreInfo.getPort() +
                 "/command";
     }
 
-    CompletableFuture<Result> dispatch( Command command ) throws CommandException;
+    CompletableFuture<Result> dispatch(Command command) throws CommandException;
 }

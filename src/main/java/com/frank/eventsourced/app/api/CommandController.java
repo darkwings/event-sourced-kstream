@@ -1,11 +1,11 @@
 package com.frank.eventsourced.app.api;
 
+import com.frank.eventsourced.app.commands.beans.AddWidgetCommand;
+import com.frank.eventsourced.app.commands.beans.CreateAppCommand;
 import com.frank.eventsourced.common.commands.dispatcher.CommandDispatcher;
 import com.frank.eventsourced.common.commands.dispatcher.Result;
 import com.frank.eventsourced.common.exceptions.CommandException;
-import com.frank.eventsourced.app.commands.beans.AddWidgetCommand;
-import com.frank.eventsourced.app.commands.beans.CreateAppCommand;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +21,7 @@ import static reactor.core.publisher.Mono.fromCompletionStage;
  * @author ftorriani
  */
 @RestController
-@Slf4j
+@Log4j2
 public class CommandController {
 
     @Autowired

@@ -18,19 +18,23 @@ Compile the project
              
 Start two instances in a separate terminal window
 
-      java -Xmx340m -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
-      java -Xmx340m -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
+      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
+      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
       
 ### API (simplified)
             
 #### Create an app
             
-      curl -X POST http://localhost:4040/app/[tenant_id]/[user_id]
+      curl -X POST http://localhost:4041/app/[tenant_id]/[user_id]
+
+As an example
+
+      curl -X POST http://localhost:4041/app/app00/user1
 
 #### Add a widget to an app
            
       curl -X POST \
-          http://localhost:4040/app/[tenant_id]/[user_id]/widgets \
+          http://localhost:4041/app/[tenant_id]/[user_id]/widgets \
           -H 'Content-Type: application/json' \
           -d '{
 	         "widgetId" : "user2-1",
@@ -45,9 +49,12 @@ Start two instances in a separate terminal window
 
 #### Retrieve an app
 
-      curl -X GET http://localhost:4040/app/[tenant_id]/[user_id]
+      curl -X GET http://localhost:4041/app/[tenant_id]/[user_id]
       
-      
+or (should be indifferent because of interactive query support)
+
+      curl -X GET http://localhost:4042/app/[tenant_id]/[user_id]
+
 ### State stores
       
 State stores are available in /tmp/kafka-streams-1 e /tmp/kafka-streams-2

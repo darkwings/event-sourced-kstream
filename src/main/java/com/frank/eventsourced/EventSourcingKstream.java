@@ -9,9 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class EventSourcingKstream {
 
-    public static void main( String[] args ) {
+    public static void main(String[] args) {
 
-        SpringApplication.run( EventSourcingKstream.class, args );
+        SpringApplication.run(EventSourcingKstream.class, args);
 
     }
 }

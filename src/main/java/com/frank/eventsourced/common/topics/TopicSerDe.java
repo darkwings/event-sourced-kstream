@@ -12,11 +12,11 @@ public class TopicSerDe<K, V> {
     private Serde<K> keySerde;
     private Serde<V> valueSerde;
 
-    public TopicSerDe( String name, Serde<K> keySerde, Serde<V> valueSerde ) {
+    public TopicSerDe(String name, Serde<K> keySerde, Serde<V> valueSerde) {
         this.name = name;
         this.keySerde = keySerde;
         this.valueSerde = valueSerde;
-        Schema.Topics.ALL.put( name, this );
+        Schema.Topics.ALL.put(name, this);
     }
 
     public Serde<K> keySerde() {

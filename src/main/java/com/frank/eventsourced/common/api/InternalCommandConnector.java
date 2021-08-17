@@ -26,16 +26,16 @@ public class InternalCommandConnector {
     private CommandDispatcher commandDispatcher;
 
     @PostMapping("/command")
-    @SuppressWarnings( "unchecked" )
-    public Mono<String> receive( @RequestBody CommandWrapper wrapper ) throws Exception {
+    @SuppressWarnings("unchecked")
+    public Mono<String> receive(@RequestBody CommandWrapper wrapper) throws Exception {
 
-        Class<? extends Command> klass = (Class<? extends Command>) forName( wrapper.getType() );
-        Command command = mapper.readValue( wrapper.getJson(), klass );
+        Class<? extends Command> klass = (Class<? extends Command>) forName(wrapper.getType());
+        Command command = mapper.readValue(wrapper.getJson(), klass);
 
         // TODO a better error handling is needed
 
         // From here on (if the caller dit it well) it is a local call
-        return fromCompletionStage( commandDispatcher.dispatch( command ) ).
-                map( result -> result.getStatus() );
+        return fromCompletionStage(commandDispatcher.dispatch(command)).
+                map(result -> result.getStatus());
     }
 }

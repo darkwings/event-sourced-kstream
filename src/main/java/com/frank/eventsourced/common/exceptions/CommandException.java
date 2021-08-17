@@ -11,18 +11,18 @@ public class CommandException extends RuntimeException {
 
     private CommandError commandError;
 
-    public CommandException( String message ) {
-        super( message );
+    public CommandException(String message) {
+        super(message);
         this.commandError = CommandError.GENERIC_ERROR;
     }
 
-    public CommandException( String message, Throwable cause ) {
-        super( message, cause );
+    public CommandException(String message, Throwable cause) {
+        super(message, cause);
         this.commandError = CommandError.GENERIC_ERROR;
     }
 
-    public CommandException( String message, CommandError commandError ) {
-        super( message );
+    public CommandException(String message, CommandError commandError) {
+        super(message);
         this.commandError = commandError;
     }
 
@@ -36,15 +36,13 @@ public class CommandException extends RuntimeException {
     }
 
     public HttpStatus httpStatus() {
-        if ( commandError == ALREADY_EXISTING_AGGREGATE ||
+        if (commandError == ALREADY_EXISTING_AGGREGATE ||
                 commandError == AGGREGATE_VERSION_CONFLICT ||
-                commandError == GENERIC_ID_CONFLICT ) {
+                commandError == GENERIC_ID_CONFLICT) {
             return HttpStatus.CONFLICT;
-        }
-        else if ( commandError == NOT_EXISTING_AGGREGATE ) {
+        } else if (commandError == NOT_EXISTING_AGGREGATE) {
             return HttpStatus.NOT_FOUND;
-        }
-        else {
+        } else {
             return HttpStatus.INTERNAL_SERVER_ERROR;
         }
     }

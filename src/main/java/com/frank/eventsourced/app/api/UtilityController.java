@@ -1,11 +1,11 @@
 package com.frank.eventsourced.app.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frank.eventsourced.common.eventsourcing.EventSourcingService;
 import com.frank.eventsourced.app.utils.KeyBuilder;
+import com.frank.eventsourced.common.eventsourcing.EventSourcingService;
 import com.frank.eventsourced.common.interactivequeries.HostStoreInfo;
 import com.frank.eventsourced.model.app.App;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -20,7 +20,7 @@ import java.util.List;
  * @author ftorriani
  */
 @RestController
-@Slf4j
+@Log4j2
 public class UtilityController {
 
     @Autowired
@@ -30,19 +30,18 @@ public class UtilityController {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @GetMapping(value = "/store/info/{tenantId}/{userId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<?> get( @PathVariable("tenantId") String tenantId,
-                                  @PathVariable("userId") String userId ) {
+    public ResponseEntity<?> get(@PathVariable("tenantId") String tenantId,
+                                 @PathVariable("userId") String userId) {
 
         try {
-            String key = KeyBuilder.key( tenantId, userId );
-            HostStoreInfo info = appService.hostForKey( key ).
-                    orElseThrow( () -> new Exception( "Missing key " + key ) );
+            String key = KeyBuilder.key(tenantId, userId);
+            HostStoreInfo info = appService.hostForKey(key).
+                    orElseThrow(() -> new Exception("Missing key " + key));
 
-            return ResponseEntity.ok().body( mapper.writeValueAsString( info ) );
-        }
-        catch ( Exception e ) {
-            log.error( "Error", e );
-            return ResponseEntity.status( 500 ).body( "{}" );
+            return ResponseEntity.ok().body(mapper.writeValueAsString(info));
+        } catch (Exception e) {
+            log.error("Error", e);
+            return ResponseEntity.status(500).body("{}");
         }
     }
 
@@ -51,11 +50,10 @@ public class UtilityController {
 
         try {
             List<HostStoreInfo> info = appService.allInfo();
-            return ResponseEntity.ok().body( mapper.writeValueAsString( info ) );
-        }
-        catch ( Exception e ) {
-            log.error( "Error", e );
-            return ResponseEntity.status( 500 ).body( "{}" );
+            return ResponseEntity.ok().body(mapper.writeValueAsString(info));
+        } catch (Exception e) {
+            log.error("Error", e);
+            return ResponseEntity.status(500).body("{}");
         }
     }
 }

@@ -5,11 +5,11 @@ package com.frank.eventsourced.common.eventsourcing;
  */
 public class RemoteStateException extends RuntimeException {
 
-    public RemoteStateException( String message ) {
-        super( message );
+    public RemoteStateException(String message) {
+        super(message);
     }
 
-    public RemoteStateException( String message, Throwable cause ) {
-        super( message, cause );
+    public RemoteStateException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
