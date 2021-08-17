@@ -36,7 +36,7 @@ public class CreateAppCommand implements Command {
     }
 
     @Override
-    public long timestampMs() {
+    public Long timestampMs() {
         return timestampMs;
     }
 }

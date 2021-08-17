@@ -14,6 +14,7 @@ import org.apache.avro.specific.SpecificRecord;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +40,7 @@ public class AppCommandHandler implements CommandHandler<App> {
                     AppCreated payload = AppCreated.newBuilder().
                             setTenantId(createCommand.getTenantId()).
                             setUserId(createCommand.getUserId()).
+                            setTimestampMs(Clock.systemUTC().millis()).
                             setEventId(UUID.randomUUID().toString()). // TODO
                                     setOperationId(UUID.randomUUID().toString()).  // TODO
                                     setKey(createCommand.aggregateId()).build();
@@ -86,6 +88,7 @@ public class AppCommandHandler implements CommandHandler<App> {
                                     setOperationId(UUID.randomUUID().toString()).  // TODO
                                     setTenantId(addWidgetCommand.getTenantId()).
                             setUserId(addWidgetCommand.getUserId()).
+                            setTimestampMs(Clock.systemUTC().millis()).
                             setWidget(item).build();
 
                     return Optional.of(payload);

@@ -9,5 +9,5 @@ public interface Command {
 
     int expectedVersion();
 
-    long timestampMs();
+    Long timestampMs();
 }

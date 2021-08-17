@@ -16,7 +16,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
@@ -36,6 +35,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.apache.kafka.streams.StoreQueryParameters.fromNameAndType;
+import static org.apache.kafka.streams.Topology.AutoOffsetReset.LATEST;
 import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD;
 import static org.apache.kafka.streams.state.StreamsMetadata.NOT_AVAILABLE;
 
@@ -131,37 +131,43 @@ public abstract class EventSourcingService<S extends SpecificRecord> implements 
         return streams;
     }
 
-//    private StreamsBuilder createTopology() {
-//        StreamsBuilder builder = new StreamsBuilder();
-//
-//        // State table
-//        KTable<String, S> stateTable =
-//                builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
-//                        Materialized.as(stateStoreName()));
-//
-//        // Event stream is in left join with the State Table
-//        builder.stream(eventLog.name(),
-//                        Consumed.with(eventLog.keySerde(), eventLog.valueSerde())).
-//                leftJoin(stateTable, eventHandler::apply).
-//                filter((key, state) -> state != null). // Just to ensure to not propagate null state
-//                to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
-//
-//        return builder;
-//    }
-
-    protected abstract Initializer<S> initializer();
-
     private StreamsBuilder createTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        builder.stream(eventLog.name(), Consumed.with(eventLog.keySerde(), eventLog.valueSerde())).
-                groupByKey().
-                aggregate(initializer(), (key, event, state) -> eventHandler.apply(event, state),
-                        Materialized.<String, S, KeyValueStore<Bytes, byte[]>>as(stateStoreName()).
-                                withKeySerde(stateTopic.keySerde()).
-                                withValueSerde(stateTopic.valueSerde()));
+        // State table
+        KTable<String, S> stateTable =
+                builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
+                        Materialized.as(stateStoreName()));
+
+        // Event stream is in left join with the State Table
+        builder.stream(eventLog.name(),
+                        Consumed.with(eventLog.keySerde(), eventLog.valueSerde())
+                                .withOffsetResetPolicy(LATEST)
+                                .withTimestampExtractor(new EventTimestampExtractor())).
+                leftJoin(stateTable, eventHandler::apply).
+                filter((key, state) -> state != null). // Just to ensure to not propagate null state TODO tombstones
+                // State topic
+                to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+
         return builder;
     }
+
+    protected abstract Initializer<S> initializer();
+
+//    private StreamsBuilder createTopology() {
+//        StreamsBuilder builder = new StreamsBuilder();
+//
+//        builder.stream(eventLog.name(),
+//                        Consumed.with(eventLog.keySerde(), eventLog.valueSerde())
+//                                .withOffsetResetPolicy(LATEST)
+//                                .withTimestampExtractor(new EventTimestampExtractor())).
+//                groupByKey().
+//                aggregate(initializer(), (key, event, state) -> eventHandler.apply(event, state),
+//                        Materialized.<String, S, KeyValueStore<Bytes, byte[]>>as(stateStoreName()).
+//                                withKeySerde(stateTopic.keySerde()).
+//                                withValueSerde(stateTopic.valueSerde()));
+//        return builder;
+//    }
 
     private Properties streamsConfig() {
         Properties props = ClientUtils.streamsConfig(bootstrapServers, stateDir,

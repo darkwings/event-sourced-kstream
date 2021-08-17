@@ -30,6 +30,7 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
         CommandException commandException = (CommandException) ex;
         log.error("Handling CommandException: {} ({} - {})",
                 ex.getMessage(), commandException.httpStatus(), commandException.getCommandError());
+        log.catching(ex);
         return new ResponseEntity<>(new Result(commandException.getCommandError().name()),
                 commandException.httpStatus());
     }

@@ -33,8 +33,10 @@ As an example
 
 #### Add a widget to an app
            
+Let's use app00, owned by user1
+
       curl -X POST \
-          http://localhost:4041/app/[tenant_id]/[user_id]/widgets \
+          http://localhost:4041/app/app00/user1/widgets \
           -H 'Content-Type: application/json' \
           -d '{
 	         "widgetId" : "user2-1",
