@@ -3,6 +3,9 @@ package com.frank.eventsourced.common.topics;
 import lombok.ToString;
 import org.apache.kafka.common.serialization.Serde;
 
+import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
+import static java.util.Collections.singletonMap;
+
 /**
  * Keeps information about serializer and deserializer of a topic
  *
@@ -31,5 +34,9 @@ public class TopicSerDe<K, V> {
 
     public String name() {
         return name;
+    }
+
+    public void configureValueSerDe(String schemaRegistryUrl) {
+        valueSerde.configure(singletonMap(SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl), false);
     }
 }
