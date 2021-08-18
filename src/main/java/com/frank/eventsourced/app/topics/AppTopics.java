@@ -1,5 +1,6 @@
 package com.frank.eventsourced.app.topics;
 
+import com.frank.eventsourced.commands.platform.app.CommandFailure;
 import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.model.app.App;
@@ -26,6 +27,7 @@ public class AppTopics implements Topics<App> {
     private TopicSerDe<String, SpecificRecord> eventLog;
     private TopicSerDe<String, SpecificRecord> commandTopic;
     private TopicSerDe<String, App> stateTopic;
+    private TopicSerDe<String, CommandFailure> failureTopic;
 
     public AppTopics(@Value("${schema.registry.url}") String schemaRegistryUrl) {
         this.schemaRegistryUrl = schemaRegistryUrl;
@@ -41,6 +43,9 @@ public class AppTopics implements Topics<App> {
 
         commandTopic = new TopicSerDe<>("app-commands", Serdes.String(), new SpecificAvroSerde<>());
         commandTopic.configureValueSerDe(this.schemaRegistryUrl);
+
+        failureTopic = new TopicSerDe<>("app-command-failures", Serdes.String(), new SpecificAvroSerde<>());
+        failureTopic.configureValueSerDe(this.schemaRegistryUrl);
     }
 
     public TopicSerDe<String, SpecificRecord> eventLogTopic() {
@@ -54,5 +59,10 @@ public class AppTopics implements Topics<App> {
     @Override
     public TopicSerDe<String, SpecificRecord> commandTopic() {
         return commandTopic;
+    }
+
+    @Override
+    public TopicSerDe<String, CommandFailure> commandFailureTopic() {
+        return failureTopic;
     }
 }

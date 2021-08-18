@@ -1,5 +1,6 @@
 package com.frank.eventsourced.common.eventsourcing;
 
+import com.frank.eventsourced.commands.platform.app.CommandFailure;
 import com.frank.eventsourced.common.Service;
 import com.frank.eventsourced.common.commands.handler.CommandHandler;
 import com.frank.eventsourced.common.events.EventHandler;
@@ -12,9 +13,12 @@ import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.common.utils.AvroJsonConverter;
 import com.frank.eventsourced.common.utils.ClientUtils;
 import com.frank.eventsourced.common.utils.MessageUtils;
-import lombok.Value;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -27,13 +31,11 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.frank.eventsourced.common.utils.MessageUtils.generateFailure;
 import static org.apache.kafka.streams.StoreQueryParameters.fromNameAndType;
 import static org.apache.kafka.streams.Topology.AutoOffsetReset.LATEST;
 import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD;
@@ -68,6 +70,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
 
     private final TopicSerDe<String, SpecificRecord> eventLog;
     private final TopicSerDe<String, SpecificRecord> commandTopic;
+    private final TopicSerDe<String, CommandFailure> commandFailureTopic;
     private final TopicSerDe<String, A> stateTopic;
 
     private final Publisher publisher;
@@ -76,23 +79,44 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
 
     class CommandJoiner {
 
-        // TODO gestire errori del command handler
-
-        EventWithState<A> checkCommandAndForwardEventWithState(SpecificRecord command, A currentState) {
+        MessageAndState<A> checkCommandAndForwardMessageWithState(SpecificRecord command, A currentState) {
             return commandHandler.apply(command, currentState)
-                    .map(e -> new EventWithState<>(e, currentState))
                     .map(e -> {
-                        A updatedState = eventHandler.apply(e.event, e.state);
-                        return new EventWithState<>(e.event, updatedState);
+                        A nextState = e.getClass().isAssignableFrom(CommandFailure.class) ?
+                                currentState : eventHandler.apply(e, currentState);
+                        return new MessageAndState<>(e, nextState);
                     })
-                    .orElse(null);
+                    .orElseGet(() -> {
+                        // Should never happen...
+                        return new MessageAndState<>(generateFailure(command, "Unable to process command"), currentState);
+                    });
         }
     }
 
-    @Value
-    static class EventWithState<S extends SpecificRecord> {
-        SpecificRecord event;
+    @Getter
+    @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+    static class MessageAndState<S extends SpecificRecord> {
+        SpecificRecord message;
         S state;
+        String errorMessage;
+        boolean error;
+
+        MessageAndState(SpecificRecord message, S state) {
+            this.message = message;
+            this.state = state;
+            if (this.message.getClass().isAssignableFrom(CommandFailure.class)) {
+                this.error = true;
+                this.errorMessage = ((CommandFailure) message).getErrorMessage();
+            }
+            else {
+                this.error = false;
+                this.errorMessage = null;
+            }
+        }
+
+        public boolean error() {
+            return error;
+        }
     }
 
     protected EventSourcingService(String bootstrapServers,
@@ -118,6 +142,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         this.restTemplate = restTemplate;
 
         this.commandTopic = topics.commandTopic();
+        this.commandFailureTopic = topics.commandFailureTopic();
         this.stateTopic = topics.stateTopic();
         this.eventLog = topics.eventLogTopic();
 
@@ -167,13 +192,22 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                         .withOffsetResetPolicy(LATEST)
                         .withTimestampExtractor(new MessageTimestampExtractor()));
 
-        KStream<String, EventWithState<A>> eventWithState = commandsStream.leftJoin(stateTable, commandJoiner::checkCommandAndForwardEventWithState);
+        KStream<String, MessageAndState<A>> messageAndState = commandsStream.leftJoin(stateTable, commandJoiner::checkCommandAndForwardMessageWithState);
 
-        // Publish the updated state and, at the same time, update the state table for next commands
-        eventWithState.mapValues(EventWithState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+        // Split the stream checking MessageAndState.error(). When true, we publish the wrapped CommandFailure message to the failure topic.
+        // There should be a Consumer active on the failure topic in order to manage errors
+        Map<String, KStream<String, MessageAndState<A>>> branches = messageAndState.split()
+                .branch((k, v) -> v.error(), Branched.withConsumer(ks -> ks.mapValues(v -> (CommandFailure) v.getMessage())
+                        .to(commandFailureTopic.name(), Produced.with(commandFailureTopic.keySerde(), commandFailureTopic.valueSerde()))))
+                .defaultBranch(Branched.as("event-branch"));
 
-        // Publish the log of event
-        eventWithState.mapValues(EventWithState::getEvent).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
+        // The branch named "event-branch" is the branch containing the MessageAndState object with the actual event and the updated state
+        // and so...
+        // ... we publish the updated state and, at the same time, update the state table for next commands
+        branches.get("event-branch").mapValues(MessageAndState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+
+        // ... we publish the event on the log topic
+        branches.get("event-branch").mapValues(MessageAndState::getMessage).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
 
         return builder;
     }

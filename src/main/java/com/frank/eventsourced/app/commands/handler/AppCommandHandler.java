@@ -5,6 +5,7 @@ import com.frank.eventsourced.app.commands.beans.CancelAppCommand;
 import com.frank.eventsourced.app.commands.beans.CreateAppCommand;
 import com.frank.eventsourced.commands.platform.app.AddWidget;
 import com.frank.eventsourced.commands.platform.app.CancelApp;
+import com.frank.eventsourced.commands.platform.app.CommandFailure;
 import com.frank.eventsourced.commands.platform.app.CreateApp;
 import com.frank.eventsourced.common.commands.beans.Command;
 import com.frank.eventsourced.common.commands.handler.CommandHandler;
@@ -17,6 +18,7 @@ import com.frank.eventsourced.events.platform.app.WidgetAdded;
 import com.frank.eventsourced.model.app.App;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.frank.eventsourced.common.exceptions.CommandError.*;
+import static com.frank.eventsourced.common.utils.MessageUtils.*;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -39,7 +42,7 @@ public class AppCommandHandler implements CommandHandler<App> {
 
     private final Map<String, AppCommandProcessor> processors;
 
-    {
+    public AppCommandHandler() {
         processors = new HashMap<>();
         processors.put(CreateApp.class.getName(), new CreateAppCommandProcessor());
         processors.put(AddWidget.class.getName(), new AddWidgetCommandProcessor());
@@ -52,11 +55,10 @@ public class AppCommandHandler implements CommandHandler<App> {
             AppCommandProcessor commandProcessor = ofNullable(processors.get(command.getClass().getName()))
                     .orElseThrow(() -> new CommandException("Command " + command.getClass().getName() + " is unknown"));
             return commandProcessor.process(command, currentState);
-        } catch (CommandException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new CommandException("Error handling command " + command.getClass().getName() + " on aggregate " +
-                    MessageUtils.keyOf(command), e);
+        }
+        catch (Exception e) {
+            log.error("Failed to process command " + command.getClass().getName() + " on app " + currentState.getKey(), e);
+            return Optional.of(generateFailure(command, e.getMessage()));
         }
     }
 
