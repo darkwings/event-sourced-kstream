@@ -8,7 +8,10 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * @author ftorriani
+ *
+ * @deprecated AVRO event on their way
  */
+@Deprecated
 public interface CommandDispatcher {
 
     default String remoteCommandConnectorUrl(HostStoreInfo hostStoreInfo) {

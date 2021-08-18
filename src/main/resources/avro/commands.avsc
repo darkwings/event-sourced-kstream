@@ -1,0 +1,175 @@
+[
+  {
+    "namespace": "com.frank.eventsourced.commands.platform.app",
+    "type": "record",
+    "name": "Widget",
+    "fields": [
+      {
+        "name": "widgetId",
+        "type": "string",
+        "doc": "The App widget unique identifier"
+      },
+      {
+        "name": "meta",
+        "type": {
+          "type": "map",
+          "values": "string"
+        },
+        "default": {},
+        "doc": "Meta-information of App widget"
+      },
+      {
+        "name": "data",
+        "type": {
+          "type": "map",
+          "values": "string"
+        },
+        "default": {},
+        "doc": "Data of App widget"
+      }
+    ]
+  },
+  {
+    "namespace": "com.frank.eventsourced.commands.platform.app",
+    "type": "record",
+    "name": "CreateApp",
+    "fields": [
+      {
+        "name": "key",
+        "type": "string",
+        "doc": "The partition key"
+      },
+      {
+        "name": "eventId",
+        "type": "string",
+        "doc": "The event ID"
+      },
+      {
+        "name": "operationId",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The operation ID, useful to correlate events",
+        "default": null
+      },
+      {
+        "name": "userId",
+        "type": "string",
+        "doc": "The User ID"
+      },
+      {
+        "name": "tenantId",
+        "type": "string",
+        "doc": "The tenant ID"
+      },
+      {
+        "name": "version",
+        "type": "int",
+        "doc": "The target version"
+      },
+      {
+        "name": "timestampMs",
+        "type": "long",
+        "doc": "Event timestamp"
+      }
+    ]
+  },
+  {
+    "namespace": "com.frank.eventsourced.commands.platform.app",
+    "type": "record",
+    "name": "CancelApp",
+    "fields": [
+      {
+        "name": "key",
+        "type": "string",
+        "doc": "The partition key"
+      },
+      {
+        "name": "eventId",
+        "type": "string",
+        "doc": "The event ID"
+      },
+      {
+        "name": "operationId",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The operation ID, useful to correlate events",
+        "default": null
+      },
+      {
+        "name": "userId",
+        "type": "string",
+        "doc": "The User ID"
+      },
+      {
+        "name": "tenantId",
+        "type": "string",
+        "doc": "The tenant ID"
+      },
+      {
+        "name": "version",
+        "type": "int",
+        "doc": "The target version"
+      },
+      {
+        "name": "timestampMs",
+        "type": "long",
+        "doc": "Event timestamp"
+      }
+    ]
+  },
+  {
+    "namespace": "com.frank.eventsourced.commands.platform.app",
+    "type": "record",
+    "name": "AddWidget",
+    "fields": [
+      {
+        "name": "key",
+        "type": "string",
+        "doc": "The partition key"
+      },
+      {
+        "name": "eventId",
+        "type": "string",
+        "doc": "The event ID"
+      },
+      {
+        "name": "operationId",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The operation ID, useful to correlate events",
+        "default": null
+      },
+      {
+        "name": "userId",
+        "type": "string",
+        "doc": "The User ID"
+      },
+      {
+        "name": "tenantId",
+        "type": "string",
+        "doc": "The tenant ID"
+      },
+      {
+        "name": "widget",
+        "type": "com.frank.eventsourced.commands.platform.app.Widget",
+        "doc": "The widget to add"
+      },
+      {
+        "name": "version",
+        "type": "int",
+        "doc": "The target version"
+      },
+      {
+        "name": "timestampMs",
+        "type": "long",
+        "doc": "Event timestamp"
+      }
+    ]
+  }
+]

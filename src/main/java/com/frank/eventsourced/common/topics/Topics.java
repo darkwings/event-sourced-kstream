@@ -9,6 +9,8 @@ import org.apache.avro.specific.SpecificRecord;
  */
 public interface Topics<A extends SpecificRecord> {
 
+    TopicSerDe<String, SpecificRecord> commandTopic();
+
     TopicSerDe<String, SpecificRecord> eventLogTopic();
 
     TopicSerDe<String, A> stateTopic();

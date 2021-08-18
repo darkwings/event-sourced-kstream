@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
-public abstract class EventUtils {
+public abstract class MessageUtils {
 
     // Some map to speed up Method retrieval from class
     static Map<String, Method> keyMap = new HashMap<>();

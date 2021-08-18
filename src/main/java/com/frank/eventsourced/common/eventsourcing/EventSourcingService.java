@@ -1,7 +1,6 @@
 package com.frank.eventsourced.common.eventsourcing;
 
 import com.frank.eventsourced.common.Service;
-import com.frank.eventsourced.common.commands.beans.Command;
 import com.frank.eventsourced.common.commands.handler.CommandHandler;
 import com.frank.eventsourced.common.events.EventHandler;
 import com.frank.eventsourced.common.exceptions.CommandException;
@@ -12,6 +11,8 @@ import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.common.utils.AvroJsonConverter;
 import com.frank.eventsourced.common.utils.ClientUtils;
+import com.frank.eventsourced.common.utils.MessageUtils;
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serdes;
@@ -66,9 +67,33 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
     private final AvroJsonConverter<A> avroJsonConverter;
 
     private final TopicSerDe<String, SpecificRecord> eventLog;
+    private final TopicSerDe<String, SpecificRecord> commandTopic;
     private final TopicSerDe<String, A> stateTopic;
 
     private final Publisher publisher;
+
+    private final CommandJoiner commandJoiner = new CommandJoiner();
+
+    class CommandJoiner {
+
+        // TODO gestire errori del command handler
+
+        EventWithState<A> checkCommandAndForwardEventWithState(SpecificRecord command, A currentState) {
+            return commandHandler.apply(command, currentState)
+                    .map(e -> new EventWithState<>(e, currentState))
+                    .map(e -> {
+                        A updatedState = eventHandler.apply(e.event, e.state);
+                        return new EventWithState<>(e.event, updatedState);
+                    })
+                    .orElse(null);
+        }
+    }
+
+    @Value
+    static class EventWithState<S extends SpecificRecord> {
+        SpecificRecord event;
+        S state;
+    }
 
     protected EventSourcingService(String bootstrapServers,
                                    String schemaRegistryUrl,
@@ -92,6 +117,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         this.serverPort = serverPort;
         this.restTemplate = restTemplate;
 
+        this.commandTopic = topics.commandTopic();
         this.stateTopic = topics.stateTopic();
         this.eventLog = topics.eventLogTopic();
 
@@ -129,6 +155,29 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         return streams;
     }
 
+    private StreamsBuilder createTopology2() {
+        StreamsBuilder builder = new StreamsBuilder();
+
+        KTable<String, A> stateTable =
+                builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
+                        Materialized.as(stateStoreName()));
+
+        KStream<String, SpecificRecord> commandsStream = builder.stream(commandTopic.name(),
+                Consumed.with(commandTopic.keySerde(), commandTopic.valueSerde())
+                        .withOffsetResetPolicy(LATEST)
+                        .withTimestampExtractor(new MessageTimestampExtractor()));
+
+        KStream<String, EventWithState<A>> eventWithState = commandsStream.leftJoin(stateTable, commandJoiner::checkCommandAndForwardEventWithState);
+
+        // Publish the updated state and, at the same time, update the state table for next commands
+        eventWithState.mapValues(EventWithState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+
+        // Publish the log of event
+        eventWithState.mapValues(EventWithState::getEvent).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
+
+        return builder;
+    }
+
     private StreamsBuilder createTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
@@ -137,13 +186,13 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                 builder.table(stateTopic.name(), Consumed.with(stateTopic.keySerde(), stateTopic.valueSerde()),
                         Materialized.as(stateStoreName()));
 
+
         // Event stream is in left join with the State Table
         builder.stream(eventLog.name(),
                         Consumed.with(eventLog.keySerde(), eventLog.valueSerde())
                                 .withOffsetResetPolicy(LATEST)
-                                .withTimestampExtractor(new EventTimestampExtractor())).
+                                .withTimestampExtractor(new MessageTimestampExtractor())).
                 leftJoin(stateTable, eventHandler::apply).
-                // State topic
                 to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
 
         return builder;
@@ -227,12 +276,13 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
      * @param command the command
      * @throws CommandException if there is any problem submitting the command
      */
-    public void handleCommand(Command command) throws CommandException {
-        commandHandler.apply(command, viewStore().get(command.aggregateId())).
+    public void handleCommand(SpecificRecord command) throws CommandException {
+        String tenantId = MessageUtils.keyOf(command).orElse("");
+        commandHandler.apply(command, viewStore().get(tenantId)).
                 ifPresent(event -> {
                     log.info("handleCommand() for aggregate '{}'. Processed command {}. " +
                                     "Publishing event '{}' on topic '{}'",
-                            command.aggregateId(),
+                            tenantId,
                             command.getClass().getSimpleName(),
                             event.getClass().getSimpleName(), eventLog.name());
                     publisher.publish(eventLog.name(), Collections.singletonList(event));

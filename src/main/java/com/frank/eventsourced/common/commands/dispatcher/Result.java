@@ -11,11 +11,14 @@ import lombok.experimental.FieldDefaults;
  * Operation result
  *
  * @author ftorriani
+ *
+ * @deprecated AVRO event on their way
  */
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Deprecated
 public class Result {
 
     String status;

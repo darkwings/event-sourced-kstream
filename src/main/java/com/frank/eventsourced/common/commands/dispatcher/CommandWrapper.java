@@ -6,10 +6,13 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author ftorriani
+ *
+ * @deprecated AVRO event on their way
  */
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Deprecated
 public class CommandWrapper {
 
     private String type;

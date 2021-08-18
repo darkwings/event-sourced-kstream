@@ -19,5 +19,5 @@ public interface CommandHandler<A> {
      * @return the event
      * @throws CommandException if command is unknown
      */
-    Optional<SpecificRecord> apply(Command command, A aggregate) throws CommandException;
+    Optional<SpecificRecord> apply(SpecificRecord command, A aggregate) throws CommandException;
 }

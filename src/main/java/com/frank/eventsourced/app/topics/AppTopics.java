@@ -24,6 +24,7 @@ public class AppTopics implements Topics<App> {
     private final String schemaRegistryUrl;
 
     private TopicSerDe<String, SpecificRecord> eventLog;
+    private TopicSerDe<String, SpecificRecord> commandTopic;
     private TopicSerDe<String, App> stateTopic;
 
     public AppTopics(@Value("${schema.registry.url}") String schemaRegistryUrl) {
@@ -37,6 +38,9 @@ public class AppTopics implements Topics<App> {
 
         stateTopic = new TopicSerDe<>("app-state", Serdes.String(), new SpecificAvroSerde<>());
         stateTopic.configureValueSerDe(this.schemaRegistryUrl);
+
+        commandTopic = new TopicSerDe<>("app-commands", Serdes.String(), new SpecificAvroSerde<>());
+        commandTopic.configureValueSerDe(this.schemaRegistryUrl);
     }
 
     public TopicSerDe<String, SpecificRecord> eventLogTopic() {
@@ -45,5 +49,10 @@ public class AppTopics implements Topics<App> {
 
     public TopicSerDe<String, App> stateTopic() {
         return stateTopic;
+    }
+
+    @Override
+    public TopicSerDe<String, SpecificRecord> commandTopic() {
+        return commandTopic;
     }
 }
