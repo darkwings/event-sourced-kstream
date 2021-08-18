@@ -1,11 +1,13 @@
-package com.frank.eventsourced.app.schema;
+package com.frank.eventsourced.app.topics;
 
+import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.model.app.App;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serdes;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +18,15 @@ import javax.annotation.PostConstruct;
  */
 @Log4j2
 @Component
-public class Schema {
+@Qualifier("appTopics")
+public class AppTopics implements Topics<App> {
 
     private final String schemaRegistryUrl;
 
     private TopicSerDe<String, SpecificRecord> eventLog;
     private TopicSerDe<String, App> stateTopic;
 
-    public Schema(@Value("${schema.registry.url}") String schemaRegistryUrl) {
+    public AppTopics(@Value("${schema.registry.url}") String schemaRegistryUrl) {
         this.schemaRegistryUrl = schemaRegistryUrl;
     }
 

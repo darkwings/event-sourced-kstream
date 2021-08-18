@@ -1,49 +1,29 @@
 package com.frank.eventsourced.app.commands.beans;
 
-import com.frank.eventsourced.common.commands.beans.Command;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
-import java.time.Clock;
 import java.util.Map;
-
-import static com.frank.eventsourced.app.utils.KeyBuilder.key;
 
 /**
  * @author ftorriani
  */
-
-@AllArgsConstructor
-@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Getter
-public class AddWidgetCommand implements Command {
+public class AddWidgetCommand extends AbstractCommand {
 
-    String tenantId;
-    String userId;
     String widgetId;
     Map<String, String> meta;
     Map<String, String> data;
-    int version;
-    long timestampMs;
 
-    private AddWidgetCommand() {
-        timestampMs = Clock.systemUTC().millis();
-    }
-
-    @Override
-    public String aggregateId() {
-        return key(tenantId, userId);
-    }
-
-    @Override
-    public int expectedVersion() {
-        return version;
-    }
-
-    @Override
-    public Long timestampMs() {
-        return timestampMs;
+    @Builder
+    public AddWidgetCommand(String tenantId, String userId, Integer version, String widgetId,
+                            Map<String, String> meta, Map<String, String> data) {
+        super(tenantId, userId, version);
+        this.widgetId = widgetId;
+        this.meta = meta;
+        this.data = data;
     }
 }

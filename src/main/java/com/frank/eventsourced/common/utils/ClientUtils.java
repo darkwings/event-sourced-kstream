@@ -5,11 +5,13 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy;
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
@@ -47,32 +49,30 @@ public class ClientUtils {
                                            String schemaRegistryUrl) {
         Properties props = new Properties();
         // Workaround for a known issue with RocksDB in environments where you have only 1 cpu core.
-        props.put(StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, CustomRocksDBConfig.class);
+        // props.put(StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, CustomRocksDBConfig.class);
+
+        props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, appId);
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.STATE_DIR_CONFIG, stateDir);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+
+        // Exactly once guarantee
         props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
 
         // Limits the deduplication cache to 50Kb
         props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "50000");
 
-        // commits often
+        // commits often to the local store
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
 
         // Maximize options to recover from a standby replica of the changelog
         props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 2);
 
         // Deserialize an AVRO class
-        props.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "true");
-//        props.put( StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName() );
-//        props.put( StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, GenericAvroSerde.class.getName() );
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class.getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class.getName());
 
-        // https://github.com/confluentinc/schema-registry/pull/680
-//        props.put( StreamsConfig.producerPrefix( KafkaAvroSerializerConfig.VALUE_SUBJECT_NAME_STRATEGY ),
-//                TopicRecordNameStrategy.class.getName() );
-
-        props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         return props;
     }
 

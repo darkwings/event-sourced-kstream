@@ -25,27 +25,25 @@ public class QueryController {
     @Autowired
     private AppService appService;
 
-    private static final AvroJsonConverter<App> converter = AvroJsonConverter.fromClass( App.class );
+    private static final AvroJsonConverter<App> converter = AvroJsonConverter.fromClass(App.class);
 
     @GetMapping(value = "/app/{tenantId}/{userId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<String> get( @PathVariable("tenantId") String tenantId,
-                                       @PathVariable("userId") String userId ) {
+    public ResponseEntity<String> get(@PathVariable("tenantId") String tenantId,
+                                      @PathVariable("userId") String userId) {
 
         try {
-            String key = KeyBuilder.key( tenantId, userId );
-            Optional<String> appOpt = appService.stateAsJson( key );
-            if ( appOpt.isPresent() ) {
-                log.info( "Returning data of App [tenant {}, user {}]", tenantId, userId );
-                return ResponseEntity.ok().body( appOpt.get() );
-            }
-            else {
-                log.warn( "App not found for tenant {} and user {}", tenantId, userId );
+            String key = KeyBuilder.key(tenantId, userId);
+            Optional<String> appOpt = appService.stateAsJson(key);
+            if (appOpt.isPresent()) {
+                log.info("Returning data of App [tenant {}, user {}]", tenantId, userId);
+                return ResponseEntity.ok().body(appOpt.get());
+            } else {
+                log.warn("App not found for tenant {} and user {}", tenantId, userId);
                 return ResponseEntity.notFound().build();
             }
-        }
-        catch ( Exception e ) {
-            log.error( "Error", e );
-            return ResponseEntity.status( 500 ).body( "{}" );
+        } catch (Exception e) {
+            log.error("Error", e);
+            return ResponseEntity.status(500).body("{}");
         }
     }
 }

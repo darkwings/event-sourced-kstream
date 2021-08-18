@@ -15,7 +15,7 @@ public interface CommandHandler<A> {
 
     /**
      * @param command   the command
-     * @param aggregate the aggregate
+     * @param aggregate the current state
      * @return the event
      * @throws CommandException if command is unknown
      */

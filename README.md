@@ -49,6 +49,8 @@ Let's use app00, owned by user1
 	         }
           }'
 
+If you use a different version number you will get
+
 #### Retrieve an app
 
       curl -X GET http://localhost:4041/app/[tenant_id]/[user_id]
@@ -56,6 +58,20 @@ Let's use app00, owned by user1
 or (should be indifferent because of interactive query support)
 
       curl -X GET http://localhost:4042/app/[tenant_id]/[user_id]
+
+The APIs above returns also the current version. This is the number you should use in a command call
+
+#### Delete an app
+
+You should pass the right version
+
+      curl -X DELETE http://localhost:4041/app/[tenant_id]/[user_id]/[version]
+
+As an example
+
+      curl -X DELETE http://localhost:4041/app/app00/user1/1
+
+Now if you try to perform a GET, you should obtain an HTTP 404
 
 ### State stores
       

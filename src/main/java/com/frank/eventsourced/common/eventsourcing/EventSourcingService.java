@@ -8,6 +8,7 @@ import com.frank.eventsourced.common.exceptions.CommandException;
 import com.frank.eventsourced.common.interactivequeries.HostStoreInfo;
 import com.frank.eventsourced.common.interactivequeries.StreamsMetadataService;
 import com.frank.eventsourced.common.publisher.Publisher;
+import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.common.utils.AvroJsonConverter;
 import com.frank.eventsourced.common.utils.ClientUtils;
@@ -75,8 +76,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                                    String serverHost,
                                    int serverPort,
                                    RestTemplate restTemplate,
-                                   TopicSerDe<String, SpecificRecord> eventLog,
-                                   TopicSerDe<String, A> stateTopic,
+                                   Topics<A> topics,
                                    EventHandler<A> eventHandler,
                                    CommandHandler<A> commandHandler,
                                    Publisher publisher, String streamName) {
@@ -92,8 +92,8 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         this.serverPort = serverPort;
         this.restTemplate = restTemplate;
 
-        this.stateTopic = stateTopic;
-        this.eventLog = eventLog;
+        this.stateTopic = topics.stateTopic();
+        this.eventLog = topics.eventLogTopic();
 
         this.publisher = publisher;
 
@@ -143,7 +143,6 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                                 .withOffsetResetPolicy(LATEST)
                                 .withTimestampExtractor(new EventTimestampExtractor())).
                 leftJoin(stateTable, eventHandler::apply).
-                filter((key, state) -> state != null). // Just to ensure to not propagate null state TODO tombstones
                 // State topic
                 to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
 

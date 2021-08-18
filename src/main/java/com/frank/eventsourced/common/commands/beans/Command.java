@@ -7,7 +7,7 @@ public interface Command {
 
     String aggregateId();
 
-    int expectedVersion();
+    Integer getVersion();
 
-    Long timestampMs();
+    Long getTimestampMs();
 }

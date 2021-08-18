@@ -20,16 +20,17 @@ import static com.frank.eventsourced.common.exceptions.CommandError.NOT_EXISTING
 
 /**
  * @author ftorriani
- * <p>
+ *
+ * @param <A> the state (the aggregate)
  */
 @Log4j2
-public abstract class GenericCommandDispatcher<S extends SpecificRecord> implements CommandDispatcher {
+public abstract class GenericCommandDispatcher<A extends SpecificRecord> implements CommandDispatcher {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final EventSourcingService<S> service;
+    private final EventSourcingService<A> service;
     private final RestTemplate restTemplate;
 
-    public GenericCommandDispatcher(EventSourcingService<S> service,
+    public GenericCommandDispatcher(EventSourcingService<A> service,
                                     RestTemplate restTemplate) {
         this.service = service;
         this.restTemplate = restTemplate;

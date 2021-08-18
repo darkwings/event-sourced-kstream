@@ -5,8 +5,8 @@ import com.frank.eventsourced.common.events.EventHandler;
 import com.frank.eventsourced.common.eventsourcing.EventSourcingService;
 import com.frank.eventsourced.common.interactivequeries.HostStoreInfo;
 import com.frank.eventsourced.common.publisher.Publisher;
+import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.utils.AvroJsonConverter;
-import com.frank.eventsourced.app.schema.Schema;
 import com.frank.eventsourced.app.utils.KeyBuilder;
 import com.frank.eventsourced.model.app.App;
 
@@ -14,7 +14,6 @@ import org.apache.kafka.streams.kstream.Initializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,23 +27,15 @@ public class AppService extends EventSourcingService<App> {
     private static final String APP_STATE_STORE_NAME = "app-store";
 
     @Autowired
-    @Qualifier("appCommand")
-    private CommandHandler<App> commandHandler;
-
-    @Autowired
-    @Qualifier("appEvent")
-    private EventHandler<App> eventHandler;
-
-    @Autowired
-    public AppService(@Value("${bootstrap.servers}") String bootstrapServers,
+    public AppService(@Qualifier("appCommand") CommandHandler<App> commandHandler,
+                      @Qualifier("appEvent") EventHandler<App> eventHandler,
+                      @Value("${bootstrap.servers}") String bootstrapServers,
                       @Value("${schema.registry.url}") String schemaRegistryUrl,
                       @Value("${state.dir}") String stateDir,
                       @Value("${server.host:localhost}") String serverHost,
                       @Value("${server.port}") int serverPort,
-                      Schema schema,
+                      @Qualifier("appTopics") Topics<App> topics,
                       RestTemplate restTemplate,
-                      EventHandler<App> eventHandler,
-                      CommandHandler<App> commandHandler,
                       Publisher publisher,
                       @Value("${app.stream.name:app-stream}") String streamName) {
         super(bootstrapServers,
@@ -53,8 +44,7 @@ public class AppService extends EventSourcingService<App> {
                 serverHost,
                 serverPort,
                 restTemplate,
-                schema.eventLogTopic(),
-                schema.stateTopic(),
+                topics,
                 eventHandler,
                 commandHandler,
                 publisher,
@@ -79,6 +69,7 @@ public class AppService extends EventSourcingService<App> {
     }
 
     @Override
+    @Deprecated
     protected Initializer<App> initializer() {
         return App::new;
     }
