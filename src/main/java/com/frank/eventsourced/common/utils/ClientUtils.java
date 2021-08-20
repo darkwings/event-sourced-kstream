@@ -73,6 +73,8 @@ public class ClientUtils {
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class.getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class.getName());
 
+        props.put(KafkaAvroSerializerConfig.VALUE_SUBJECT_NAME_STRATEGY,
+                TopicRecordNameStrategy.class.getName());
         return props;
     }
 
@@ -82,7 +84,7 @@ public class ClientUtils {
      * @param bootstrapServers the broker csv
      * @param schemaRegistryUrl the schema registryURL
      * @param clientId the provided clientID
-     * @param transactionId the provided transation ID
+     * @param transactionId the provided transaction ID
      * @param <T> the object to be published
      * @return a configured (for durability) Kafka producer
      */

@@ -11,6 +11,8 @@ Create the topics
 
       bin/kafka-topics --create --topic app-state --partitions 3 --replication-factor 1 --zookeeper localhost:2181
       bin/kafka-topics --create --topic app-events --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+      bin/kafka-topics --create --topic app-commands --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+      bin/kafka-topics --create --topic app-command-failures --partitions 3 --replication-factor 1 --zookeeper localhost:2181
 
 Compile the project
 
@@ -48,8 +50,6 @@ Let's use app00, owned by user1
 		         "c" : "dddd"
 	         }
           }'
-
-If you use a different version number you will get
 
 #### Retrieve an app
 

@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import static com.frank.eventsourced.common.exceptions.CommandError.*;
 import static com.frank.eventsourced.common.utils.MessageUtils.*;
+import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -53,11 +54,11 @@ public class AppCommandHandler implements CommandHandler<App> {
 
         try {
             AppCommandProcessor commandProcessor = ofNullable(processors.get(command.getClass().getName()))
-                    .orElseThrow(() -> new CommandException("Command " + command.getClass().getName() + " is unknown"));
+                    .orElseThrow(() -> new CommandException(format("Command %s is unknown", command.getClass().getName())));
             return commandProcessor.process(command, currentState);
         }
         catch (Exception e) {
-            log.error("Failed to process command " + command.getClass().getName() + " on app " + currentState.getKey(), e);
+            log.error(format("Failed to process command %s on app %s", command.getClass().getName(), currentState.getKey()), e);
             return Optional.of(generateFailure(command, e.getMessage()));
         }
     }

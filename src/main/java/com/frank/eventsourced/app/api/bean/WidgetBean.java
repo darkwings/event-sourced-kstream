@@ -1,4 +1,4 @@
-package com.frank.eventsourced.app.api;
+package com.frank.eventsourced.app.api.bean;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

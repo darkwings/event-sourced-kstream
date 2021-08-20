@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -82,6 +81,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         MessageAndState<A> checkCommandAndForwardMessageWithState(SpecificRecord command, A currentState) {
             return commandHandler.apply(command, currentState)
                     .map(e -> {
+                        log.info("Command handler executed: received {}", e.getClass().getSimpleName());
                         A nextState = e.getClass().isAssignableFrom(CommandFailure.class) ?
                                 currentState : eventHandler.apply(e, currentState);
                         return new MessageAndState<>(e, nextState);
@@ -130,7 +130,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                                    CommandHandler<A> commandHandler,
                                    Publisher publisher, String streamName) {
 
-        this.serviceId = getClass().getName();
+        this.serviceId = streamName;
 
         this.bootstrapServers = bootstrapServers;
         this.schemaRegistryUrl = schemaRegistryUrl;
@@ -180,7 +180,7 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         return streams;
     }
 
-    private StreamsBuilder createTopology2() {
+    private StreamsBuilder createTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
         KTable<String, A> stateTable =
@@ -196,23 +196,26 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
 
         // Split the stream checking MessageAndState.error(). When true, we publish the wrapped CommandFailure message to the failure topic.
         // There should be a Consumer active on the failure topic in order to manage errors
-        Map<String, KStream<String, MessageAndState<A>>> branches = messageAndState.split()
+        Map<String, KStream<String, MessageAndState<A>>> branches = messageAndState.split(Named.as("split-"))
                 .branch((k, v) -> v.error(), Branched.withConsumer(ks -> ks.mapValues(v -> (CommandFailure) v.getMessage())
                         .to(commandFailureTopic.name(), Produced.with(commandFailureTopic.keySerde(), commandFailureTopic.valueSerde()))))
                 .defaultBranch(Branched.as("event-branch"));
 
+        log.info("Branches: {}", branches);
+
         // The branch named "event-branch" is the branch containing the MessageAndState object with the actual event and the updated state
         // and so...
         // ... we publish the updated state and, at the same time, update the state table for next commands
-        branches.get("event-branch").mapValues(MessageAndState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+        branches.get("split-event-branch").mapValues(MessageAndState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
 
         // ... we publish the event on the log topic
-        branches.get("event-branch").mapValues(MessageAndState::getMessage).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
+        branches.get("split-event-branch").mapValues(MessageAndState::getMessage).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
 
         return builder;
     }
 
-    private StreamsBuilder createTopology() {
+    @Deprecated
+    private StreamsBuilder createTopology_old() {
         StreamsBuilder builder = new StreamsBuilder();
 
         // State table
@@ -309,6 +312,8 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
      *
      * @param command the command
      * @throws CommandException if there is any problem submitting the command
+     *
+     * @deprecated
      */
     public void handleCommand(SpecificRecord command) throws CommandException {
         String tenantId = MessageUtils.keyOf(command).orElse("");
@@ -321,6 +326,16 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
                             event.getClass().getSimpleName(), eventLog.name());
                     publisher.publish(eventLog.name(), Collections.singletonList(event));
                 });
+    }
+
+    /**
+     * Publishes a command on the dedicated topic
+     *
+     * @param command the command AVRO to be published
+     */
+    public void publishCommand(SpecificRecord command) {
+
+        publisher.publish(commandTopic.name(), Collections.singletonList(command));
     }
 
     /**
