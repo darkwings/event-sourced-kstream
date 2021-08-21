@@ -1,6 +1,10 @@
 ## Kafka Summit 2019 demo
 
-This is the companion code of my talk at Kafka Summit London 2019, called "The source of truth... twice".
+This is the companion code of my talk at Kafka Summit London 2019, called "The source of truth... twice", updated to
+- Most recent versions of Kafka/Confluent libraries
+- Commands as messages published on a dedicated topic.
+
+The command si published on the topic app-commands. A stream processor performs a lookup on the state table (fed by the app-state topic) to check the current state and generating the corresponding event. The event is published then on app-events topic and the updated state is published on app-state topic, updating the state of the aggregate.
 
 ### Installation
 
