@@ -1,4 +1,4 @@
-## Kafka Summit 2019 demo
+# Event-Sourced KStream,
 
 This is the companion code of my talk at Kafka Summit London 2019, called "The source of truth... twice", updated to
 - Most recent versions of Kafka/Confluent libraries
@@ -6,17 +6,21 @@ This is the companion code of my talk at Kafka Summit London 2019, called "The s
 
 The command si published on the topic app-commands. A stream processor performs a lookup on the state table (fed by the app-state topic) to check the current state and generating the corresponding event. The event is published then on app-events topic and the updated state is published on app-state topic, updating the state of the aggregate.
 
-### Installation
+## Installation
 
 Download the last version of the Confluent CLI at https://www.confluent.io/download/. 
 Install it and then move to the installation directory. 
 
-Create the topics
+### Create the topics
+
+Execute the following commands to create the topics
 
       bin/kafka-topics --create --topic app-state --partitions 3 --replication-factor 1 --zookeeper localhost:2181
       bin/kafka-topics --create --topic app-events --partitions 3 --replication-factor 1 --zookeeper localhost:2181
       bin/kafka-topics --create --topic app-commands --partitions 3 --replication-factor 1 --zookeeper localhost:2181
       bin/kafka-topics --create --topic app-command-failures --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+
+### Compile and execute
 
 Compile the project
 
