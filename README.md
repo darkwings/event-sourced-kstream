@@ -20,8 +20,8 @@ Compile the project
              
 Start two instances in a separate terminal window
 
-      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
-      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
+      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
+      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
       
 ### API (simplified)
             
@@ -31,14 +31,14 @@ Start two instances in a separate terminal window
 
 As an example
 
-      curl -X POST http://localhost:4041/app/app00/user3
+      curl -X POST http://localhost:4041/app/app00/user1
 
 #### Add a widget to an app
            
 Let's use app00, owned by user1
 
       curl -X POST \
-          http://localhost:4041/app/app00/user3/widgets \
+          http://localhost:4041/app/app00/user1/widgets \
           -H 'Content-Type: application/json' \
           -d '{
 	         "widgetId" : "user1-1",
@@ -52,7 +52,7 @@ Let's use app00, owned by user1
           }'
 
       curl -X POST \
-          http://localhost:4041/app/app00/user3/widgets \
+          http://localhost:4041/app/app00/user1/widgets \
           -H 'Content-Type: application/json' \
           -d '{
 	         "widgetId" : "user1-3",
