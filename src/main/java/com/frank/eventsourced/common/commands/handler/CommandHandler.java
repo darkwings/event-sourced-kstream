@@ -1,6 +1,5 @@
 package com.frank.eventsourced.common.commands.handler;
 
-import com.frank.eventsourced.common.commands.beans.Command;
 import com.frank.eventsourced.common.exceptions.CommandException;
 import org.apache.avro.specific.SpecificRecord;
 
@@ -16,8 +15,7 @@ public interface CommandHandler<A> {
     /**
      * @param command   the command
      * @param aggregate the current state
-     * @return the event
-     * @throws CommandException if command is unknown
+     * @return the event to be forwarded or a {@link com.frank.eventsourced.commands.platform.app.CommandFailure} object
      */
-    Optional<SpecificRecord> apply(Command command, A aggregate) throws CommandException;
+    Optional<SpecificRecord> apply(SpecificRecord command, A aggregate) throws CommandException;
 }

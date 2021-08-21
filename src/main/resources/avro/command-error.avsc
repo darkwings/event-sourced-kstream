@@ -1,0 +1,51 @@
+[
+  {
+    "namespace": "com.frank.eventsourced.commands.platform.app",
+    "type": "record",
+    "name": "CommandFailure",
+    "fields": [
+      {
+        "name": "key",
+        "type": "string",
+        "doc": "The partition key"
+      },
+      {
+        "name": "eventId",
+        "type": "string",
+        "doc": "The event ID"
+      },
+      {
+        "name": "operationId",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The operation ID, useful to correlate events",
+        "default": null
+      },
+      {
+        "name": "errorMessage",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The error message",
+        "default": null
+      },
+      {
+        "name": "userId",
+        "type": [
+          "null",
+          "string"
+        ],
+        "doc": "The User ID",
+        "default": null
+      },
+      {
+        "name": "tenantId",
+        "type": "string",
+        "doc": "The tenant ID"
+      }
+    ]
+  }
+]

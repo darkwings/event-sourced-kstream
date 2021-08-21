@@ -1,6 +1,6 @@
 package com.frank.eventsourced.common.publisher;
 
-import com.frank.eventsourced.common.utils.EventUtils;
+import com.frank.eventsourced.common.utils.MessageUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.producer.Producer;
@@ -25,15 +25,15 @@ public class Publisher {
                      @Value("${schema.registry.url}") String schemaRegistryUrl,
                      @Value("${client.id}") String clientId,
                      @Value("${transaction.id}") String transactionId) {
-        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId, transactionId);
+        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId,
+                transactionId, true);
     }
 
     public void publish(String topic, Collection<SpecificRecord> specificRecords) {
         producer.beginTransaction();
         try {
-
             for (SpecificRecord record : specificRecords) {
-                EventUtils.keyOf(record).ifPresent(key -> {
+                MessageUtils.keyOf(record).ifPresent(key -> {
                     producer.send(new ProducerRecord<>(topic, null, key, record));
                 });
             }

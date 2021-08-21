@@ -11,6 +11,8 @@ Create the topics
 
       bin/kafka-topics --create --topic app-state --partitions 3 --replication-factor 1 --zookeeper localhost:2181
       bin/kafka-topics --create --topic app-events --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+      bin/kafka-topics --create --topic app-commands --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+      bin/kafka-topics --create --topic app-command-failures --partitions 3 --replication-factor 1 --zookeeper localhost:2181
 
 Compile the project
 
@@ -18,8 +20,8 @@ Compile the project
              
 Start two instances in a separate terminal window
 
-      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
-      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-1.0.0-SNAPSHOT.jar
+      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
+      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
       
 ### API (simplified)
             
@@ -39,7 +41,7 @@ Let's use app00, owned by user1
           http://localhost:4041/app/app00/user1/widgets \
           -H 'Content-Type: application/json' \
           -d '{
-	         "widgetId" : "user2-1",
+	         "widgetId" : "user1-1",
 	         "version" : 0,
 	         "meta" : {
 		         "meta2" : "value2"	
@@ -49,7 +51,19 @@ Let's use app00, owned by user1
 	         }
           }'
 
-If you use a different version number you will get
+      curl -X POST \
+          http://localhost:4041/app/app00/user1/widgets \
+          -H 'Content-Type: application/json' \
+          -d '{
+	         "widgetId" : "user1-3",
+	         "version" : 1,
+	         "meta" : {
+		         "meta2" : "value2-a"	
+	         },
+	         "data" : {
+		         "c" : "eeee"
+	         }
+          }'
 
 #### Retrieve an app
 
