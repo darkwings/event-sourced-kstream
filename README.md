@@ -20,8 +20,8 @@ Compile the project
              
 Start two instances in a separate terminal window
 
-      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
-      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-2.0.0-SNAPSHOT.jar
+      java -Dserver.port=4041 -Dtransaction.id=1111 -Dstate.dir=/tmp/kafka-streams-1 -jar target/kstream-app-2.0.0.jar
+      java -Dserver.port=4042 -Dtransaction.id=2222 -Dstate.dir=/tmp/kafka-streams-2 -jar target/kstream-app-2.0.0.jar
       
 ### API (simplified)
             
