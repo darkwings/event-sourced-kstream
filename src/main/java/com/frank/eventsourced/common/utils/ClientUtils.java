@@ -28,24 +28,6 @@ import static java.lang.Integer.MAX_VALUE;
 @Log4j2
 public class ClientUtils {
 
-    private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
-    private static final String DEFAULT_SCHEMA_REGISTRY_URL = "http://localhost:8081";
-    public static final long MIN = 60 * 1000L;
-
-    public static class CustomRocksDBConfig implements RocksDBConfigSetter {
-
-        @Override
-        public void setConfig(final String storeName, final Options options,
-                              final Map<String, Object> configs) {
-            // Workaround: We must ensure that the parallelism is set to >= 2.  There seems to be a known
-            // issue with RocksDB where explicitly setting the parallelism to 1 causes issues (even though
-            // 1 seems to be RocksDB's default for this configuration).
-            int compactionParallelism = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-            // Set number of compaction threads (but not flush threads).
-            options.setIncreaseParallelism(compactionParallelism);
-        }
-    }
-
     public static Properties streamsConfig(String bootstrapServers, String stateDir, String appId,
                                            String schemaRegistryUrl) {
         Properties props = new Properties();
@@ -75,8 +57,7 @@ public class ClientUtils {
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class.getName());
 
         // Embedded producer properties
-        props.put(VALUE_SUBJECT_NAME_STRATEGY,
-                TopicRecordNameStrategy.class.getName());
+        props.put(VALUE_SUBJECT_NAME_STRATEGY, TopicRecordNameStrategy.class.getName());
         return props;
     }
 
@@ -90,11 +71,11 @@ public class ClientUtils {
      * @param <T> the object to be published
      * @return a configured (for durability) Kafka producer
      */
-    public static <T> Producer<String, T> startDurabilityOptimizedProducer(String bootstrapServers,
-                                                                           String schemaRegistryUrl,
-                                                                           String clientId,
-                                                                           String transactionId,
-                                                                           boolean multiSchemaSupport) {
+    public static <T> Producer<String, T> createDurabilityOptimizedProducer(String bootstrapServers,
+                                                                            String schemaRegistryUrl,
+                                                                            String clientId,
+                                                                            String transactionId,
+                                                                            boolean multiSchemaSupport) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);

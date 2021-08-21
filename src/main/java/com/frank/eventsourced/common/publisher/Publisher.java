@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 
-import static com.frank.eventsourced.common.utils.ClientUtils.startDurabilityOptimizedProducer;
+import static com.frank.eventsourced.common.utils.ClientUtils.createDurabilityOptimizedProducer;
 
 /**
  * @author ftorriani
@@ -25,7 +25,7 @@ public class Publisher {
                      @Value("${schema.registry.url}") String schemaRegistryUrl,
                      @Value("${client.id}") String clientId,
                      @Value("${transaction.id}") String transactionId) {
-        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId,
+        this.producer = createDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId,
                 transactionId, true);
     }
 
@@ -33,9 +33,7 @@ public class Publisher {
         producer.beginTransaction();
         try {
             for (SpecificRecord record : specificRecords) {
-                MessageUtils.keyOf(record).ifPresent(key -> {
-                    producer.send(new ProducerRecord<>(topic, null, key, record));
-                });
+                MessageUtils.keyOf(record).ifPresent(key -> producer.send(new ProducerRecord<>(topic, null, key, record)));
             }
             producer.commitTransaction();
         } catch (Exception e) {
