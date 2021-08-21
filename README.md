@@ -1,6 +1,6 @@
 # Event-Sourced KStream,
 
-This is the companion code of my talk at Kafka Summit London 2019, called "The source of truth... twice", updated to
+This is the companion code of the talk I gave at Kafka Summit London 2019, called "The source of truth... twice", updated to
 - Most recent versions of Kafka/Confluent libraries
 - Commands as messages published on a dedicated topic.
 
