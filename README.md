@@ -31,23 +31,37 @@ Start two instances in a separate terminal window
 
 As an example
 
-      curl -X POST http://localhost:4041/app/app00/user1
+      curl -X POST http://localhost:4041/app/app00/user3
 
 #### Add a widget to an app
            
 Let's use app00, owned by user1
 
       curl -X POST \
-          http://localhost:4041/app/app00/user1/widgets \
+          http://localhost:4041/app/app00/user3/widgets \
           -H 'Content-Type: application/json' \
           -d '{
-	         "widgetId" : "user2-1",
+	         "widgetId" : "user1-1",
 	         "version" : 0,
 	         "meta" : {
 		         "meta2" : "value2"	
 	         },
 	         "data" : {
 		         "c" : "dddd"
+	         }
+          }'
+
+      curl -X POST \
+          http://localhost:4041/app/app00/user3/widgets \
+          -H 'Content-Type: application/json' \
+          -d '{
+	         "widgetId" : "user1-3",
+	         "version" : 1,
+	         "meta" : {
+		         "meta2" : "value2-a"	
+	         },
+	         "data" : {
+		         "c" : "eeee"
 	         }
           }'
 

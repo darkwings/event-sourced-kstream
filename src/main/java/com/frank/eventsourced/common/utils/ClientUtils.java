@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Properties;
 
+import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY;
 import static java.lang.Integer.MAX_VALUE;
 
 @Log4j2
@@ -73,7 +74,8 @@ public class ClientUtils {
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class.getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class.getName());
 
-        props.put(KafkaAvroSerializerConfig.VALUE_SUBJECT_NAME_STRATEGY,
+        // Embedded producer properties
+        props.put(VALUE_SUBJECT_NAME_STRATEGY,
                 TopicRecordNameStrategy.class.getName());
         return props;
     }
@@ -91,7 +93,8 @@ public class ClientUtils {
     public static <T> Producer<String, T> startDurabilityOptimizedProducer(String bootstrapServers,
                                                                            String schemaRegistryUrl,
                                                                            String clientId,
-                                                                           String transactionId) {
+                                                                           String transactionId,
+                                                                           boolean multiSchemaSupport) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
@@ -100,31 +103,24 @@ public class ClientUtils {
         // all broker should ack
         props.put(ProducerConfig.ACKS_CONFIG, "all");
 
-
         // Transaction support
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionId);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
 
-        props.put(ProducerConfig.RETRIES_CONFIG, MAX_VALUE);
-
-        // con idempotent producer potremmo anche usare il valore di default
-        // props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
+        // Retries
+        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
+        props.put(ProducerConfig.RETRIES_CONFIG, 20);
 
         // Serializers
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
 
+        if (multiSchemaSupport) {
+            // Support Different message types on a topic https://github.com/confluentinc/schema-registry/pull/680
+            props.put(VALUE_SUBJECT_NAME_STRATEGY, TopicRecordNameStrategy.class.getName());
+        }
 
-
-        // https://github.com/confluentinc/schema-registry/pull/680
-        props.put(KafkaAvroSerializerConfig.VALUE_SUBJECT_NAME_STRATEGY,
-                TopicRecordNameStrategy.class.getName());
-
-        // FIXME capire perchè non funziona l'assegnazione specifica di un serializer...
-        Producer<String, T> prod = new KafkaProducer<String, T>(props);
-//        KafkaProducer prod = new KafkaProducer<>( props,
-//                topic.specificKeySerializer() != null ? topic.specificKeySerializer(): topic.keySerde().serializer(),
-//                topic.specificValueSerializer() != null ? topic.specificValueSerializer() : topic.valueSerde().serializer() );
+        Producer<String, T> prod = new KafkaProducer<>(props);
         prod.initTransactions();
         return prod;
     }

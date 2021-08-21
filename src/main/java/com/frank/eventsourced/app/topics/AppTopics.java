@@ -4,6 +4,7 @@ import com.frank.eventsourced.commands.platform.app.CommandFailure;
 import com.frank.eventsourced.common.topics.Topics;
 import com.frank.eventsourced.common.topics.TopicSerDe;
 import com.frank.eventsourced.model.app.App;
+import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import lombok.extern.log4j.Log4j2;
 import org.apache.avro.specific.SpecificRecord;
@@ -36,7 +37,7 @@ public class AppTopics implements Topics<App> {
     @PostConstruct
     public void init() {
         eventLog = new TopicSerDe<>("app-events", Serdes.String(), new SpecificAvroSerde<>());
-        eventLog.configureValueSerDe(this.schemaRegistryUrl);
+        eventLog.configureValueSerDeAndSchemaNaming(this.schemaRegistryUrl, TopicRecordNameStrategy.class.getName());
 
         stateTopic = new TopicSerDe<>("app-state", Serdes.String(), new SpecificAvroSerde<>());
         stateTopic.configureValueSerDe(this.schemaRegistryUrl);

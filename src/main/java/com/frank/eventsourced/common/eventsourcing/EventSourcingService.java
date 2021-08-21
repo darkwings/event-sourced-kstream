@@ -198,6 +198,8 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
         // There should be a Consumer active on the failure topic in order to manage errors
         Map<String, KStream<String, MessageAndState<A>>> branches = messageAndState.split(Named.as("split-"))
                 .branch((k, v) -> v.error(), Branched.withConsumer(ks -> ks.mapValues(v -> (CommandFailure) v.getMessage())
+                        .peek((k, v) -> log.error("Sending failure message '{}' to failure topic '{}'",
+                                v.getClass().getName(), commandFailureTopic.name()))
                         .to(commandFailureTopic.name(), Produced.with(commandFailureTopic.keySerde(), commandFailureTopic.valueSerde()))))
                 .defaultBranch(Branched.as("event-branch"));
 
@@ -205,11 +207,17 @@ public abstract class EventSourcingService<A extends SpecificRecord> implements 
 
         // The branch named "event-branch" is the branch containing the MessageAndState object with the actual event and the updated state
         // and so...
-        // ... we publish the updated state and, at the same time, update the state table for next commands
-        branches.get("split-event-branch").mapValues(MessageAndState::getState).to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
+        // ... we publish the updated state and, at the same time, update the local state store for next commands
+        branches.get("split-event-branch").mapValues(MessageAndState::getState)
+                .peek((k, v) -> log.info("Sending state message '{}' to state topic '{}'",
+                        v.getClass().getName(), stateTopic.name()))
+                .to(stateTopic.name(), Produced.with(stateTopic.keySerde(), stateTopic.valueSerde()));
 
         // ... we publish the event on the log topic
-        branches.get("split-event-branch").mapValues(MessageAndState::getMessage).to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
+        branches.get("split-event-branch").mapValues(MessageAndState::getMessage)
+                .peek((k, v) -> log.info("Sending event message '{}' to event log '{}",
+                        v.getClass().getName(), eventLog.name()))
+                .to(eventLog.name(), Produced.with(eventLog.keySerde(), eventLog.valueSerde()));
 
         return builder;
     }

@@ -25,13 +25,13 @@ public class Publisher {
                      @Value("${schema.registry.url}") String schemaRegistryUrl,
                      @Value("${client.id}") String clientId,
                      @Value("${transaction.id}") String transactionId) {
-        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId, transactionId);
+        this.producer = startDurabilityOptimizedProducer(bootstrapServers, schemaRegistryUrl, clientId,
+                transactionId, true);
     }
 
     public void publish(String topic, Collection<SpecificRecord> specificRecords) {
         producer.beginTransaction();
         try {
-
             for (SpecificRecord record : specificRecords) {
                 MessageUtils.keyOf(record).ifPresent(key -> {
                     producer.send(new ProducerRecord<>(topic, null, key, record));
