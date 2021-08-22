@@ -1,10 +1,23 @@
 # Event-Sourced KStream,
 
-This is the companion code of the talk I gave at Kafka Summit London 2019, called "The source of truth... twice", updated to
-- Most recent versions of Kafka/Confluent libraries
-- Commands as messages published on a dedicated topic.
+This is the companion code of the talk I gave at Kafka Summit London 2019, called "The source of truth... twice", updated to the most recent versions of Kafka/Confluent libraries and with Commands implemented as messages published on a dedicated topic.
 
-The command si published on the topic app-commands. A stream processor performs a lookup on the state table (fed by the app-state topic) to check the current state and generating the corresponding event. The event is published then on app-events topic and the updated state is published on app-state topic, updating the state of the aggregate.
+This projects shows a possible implementation of Event Sourcing using Kafka 'as a database' and leveraging Kafka Streams to achieve this purpose.
+
+In the classical event sourcing, you issue some Commands that are processed by your application and transformed into Events, which are used to update the state of an Aggregate (see https://domaincentric.net/blog/event-sourcing-aggregates-vs-projections). The events are stored in an event store, actually a Kafka topic, and the aggregate is stored in local state store, managed by Kafka Streams, backed by a changelog topic in Kafka and queried using interactive queries.
+
+## The project 
+
+This project will use a simple aggregate called App. It's a fake configuration of a web application, actually a collection of widgets.
+
+The code is organized in the following way
+- a common part, which implements event sourcing. It's totally generic and can be reused.
+- a specicic part, which defines the aggregate, the commands and the events (all AVRO objects) to implement the specific use case of App configuration
+
+### How it works
+
+The command si published on the topic ``app-commands``. A stream processor performs a lookup on the state table (fed by the ``app-state`` topic) to check the current state and generating the corresponding event. The event is published then on ``app-events`` topic and the updated state is published on ``app-state`` topic, updating the state of the aggregate.
+When a commands cannot be processed because of an error (could be a validation error), the failure is published on ``app-command-failure`` topic.
 
 ## Installation
 
@@ -43,7 +56,7 @@ As an example
 
 #### Add a widget to an app
            
-Let's use app00, owned by user1
+Let's use ``app00``, owned by ``user1``
 
       curl -X POST \
           http://localhost:4041/app/app00/user1/widgets \
@@ -97,4 +110,4 @@ Now if you try to perform a GET, you should obtain an HTTP 404
 
 ### State stores
       
-State stores are available in /tmp/kafka-streams-1 e /tmp/kafka-streams-2
+State stores are available in ``/tmp/kafka-streams-1`` e ``/tmp/kafka-streams-2``
