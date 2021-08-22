@@ -56,7 +56,7 @@ As an example
 
 #### Add a widget to an app
            
-Let's use app00, owned by user1
+Let's use ``app00``, owned by ``user1``
 
       curl -X POST \
           http://localhost:4041/app/app00/user1/widgets \
@@ -110,4 +110,4 @@ Now if you try to perform a GET, you should obtain an HTTP 404
 
 ### State stores
       
-State stores are available in /tmp/kafka-streams-1 e /tmp/kafka-streams-2
+State stores are available in ``/tmp/kafka-streams-1`` e ``/tmp/kafka-streams-2``
