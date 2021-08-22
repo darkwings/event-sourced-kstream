@@ -2,9 +2,9 @@
 
 This is the companion code of the talk I gave at Kafka Summit London 2019, called "The source of truth... twice", updated to the most recent versions of Kafka/Confluent libraries and with Commands implemented as messages published on a dedicated topic.
 
-This projects shows a possible implementatio of Event Sourcing using Kafka 'as a database' and leveraging Kafka Streams to achieve this purpose.
+This projects shows a possible implementation of Event Sourcing using Kafka 'as a database' and leveraging Kafka Streams to achieve this purpose.
 
-In the classic event sourcing, you issue some Commands that are processed by your application and transformed into Events, which are used to update the state of an Aggregate (see https://domaincentric.net/blog/event-sourcing-aggregates-vs-projections). The events are stored in an event store (a Kafka topic) and the aggregate is stored in local state store, managed by Kafka Streams, backed by a changelog topic in Kafka and queried using interactive queries.
+In the classical event sourcing, you issue some Commands that are processed by your application and transformed into Events, which are used to update the state of an Aggregate (see https://domaincentric.net/blog/event-sourcing-aggregates-vs-projections). The events are stored in an event store, actually a Kafka topic, and the aggregate is stored in local state store, managed by Kafka Streams, backed by a changelog topic in Kafka and queried using interactive queries.
 
 ## The project 
 
